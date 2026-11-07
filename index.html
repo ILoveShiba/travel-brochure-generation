@@ -330,28 +330,45 @@
         <!-- 1. 航班資訊 -->
         <div class="form-section">
             <div class="section-title">✈️ 1. 航班時間資訊</div>
+            <!-- 去程 -->
             <div class="row">
-                <div class="col form-group">
-                    <label>去程時間 (輸入日期如 2026/8/15 自動推算每日行程)：</label>
-                    <input type="text" id="flightInTime" placeholder="例：2026/8/15(六)06:35出發  11:15抵達">
+                <div class="col form-group" style="flex: 1.2;">
+                    <label>去程時間 (輸入日期如 2026/8/15 )：</label>
+                    <input type="text" id="flightInTime" placeholder="例：2026/8/15(六) 06:35 > 11:15">
+                </div>
+                <div class="col form-group" style="flex: 0.8;">
+                    <label>班機代號：</label>
+                    <input type="text" id="flightInNo" placeholder="例：BR198">
                 </div>
                 <div class="col form-group">
-                    <label>航廈與機場：</label>
-                    <input type="text" id="flightInAirport" placeholder="例：桃園機場出發｜東京成田機場抵達">
+                    <label>出發機場：</label>
+                    <input type="text" id="flightInDep" placeholder="例：桃園機場 T2">
+                </div>
+                <div class="col form-group">
+                    <label>抵達機場：</label>
+                    <input type="text" id="flightInArr" placeholder="例：成田機場 T1">
                 </div>
             </div>
+            <!-- 回程 -->
             <div class="row">
-                <div class="col form-group">
+                <div class="col form-group" style="flex: 1.2;">
                     <label>回程時間：</label>
-                    <input type="text" id="flightOutTime" placeholder="例：2026/8/19(三)14:00出發  16:55抵達">
+                    <input type="text" id="flightOutTime" placeholder="例：2026/8/19(三) 14:00 > 16:55">
+                </div>
+                <div class="col form-group" style="flex: 0.8;">
+                    <label>班機代號：</label>
+                    <input type="text" id="flightOutNo" placeholder="例：BR197">
                 </div>
                 <div class="col form-group">
-                    <label>航廈與機場：</label>
-                    <input type="text" id="flightOutAirport" placeholder="例：東京成田機場出發｜桃園機場抵達">
+                    <label>出發機場：</label>
+                    <input type="text" id="flightOutDep" placeholder="例：成田機場 T1">
+                </div>
+                <div class="col form-group">
+                    <label>抵達機場：</label>
+                    <input type="text" id="flightOutArr" placeholder="例：桃園機場 T2">
                 </div>
             </div>
         </div>
-
         <!-- 2. 飯店資訊 -->
         <div class="form-section">
             <div class="section-title">🏨 2. 飯店資訊</div>
@@ -409,7 +426,8 @@
     const blankData = {
         firebaseDbUrl: "", firebaseRoomId: "",
         guideTitle: "", guideSubtitle: "", guideSummary: "",
-        flightInTime: "", flightInAirport: "", flightOutTime: "", flightOutAirport: "",
+        flightInTime: "", flightInNo: "", flightInDep: "", flightInArr: "",
+        flightOutTime: "", flightOutNo: "", flightOutDep: "", flightOutArr: "",
         hotels: [{ checkIn: "", checkOut: "", name: "", engName: "", address: "", trans: "" }],
         days: [{ title: "", spots: [{ time: "", spot: "", trans: "", routeUrl: "", note: "" }] }],
         shopping: [{ cat: "", desc: "" }],
@@ -533,9 +551,13 @@
             guideSubtitle: document.getElementById('guideSubtitle').value || '',
             guideSummary: document.getElementById('guideSummary').value || '',
             flightInTime: document.getElementById('flightInTime').value || '',
-            flightInAirport: document.getElementById('flightInAirport').value || '',
+            flightInNo: document.getElementById('flightInNo').value || '',
+            flightInDep: document.getElementById('flightInDep').value || '',
+            flightInArr: document.getElementById('flightInArr').value || '',
             flightOutTime: document.getElementById('flightOutTime').value || '',
-            flightOutAirport: document.getElementById('flightOutAirport').value || '',
+            flightOutNo: document.getElementById('flightOutNo').value || '',
+            flightOutDep: document.getElementById('flightOutDep').value || '',
+            flightOutArr: document.getElementById('flightOutArr').value || '',
             hotels: [], days: [], shopping: [], coupons: [], docs: []
         };
 
@@ -598,9 +620,13 @@
         document.getElementById('guideSubtitle').value = data.guideSubtitle || '';
         document.getElementById('guideSummary').value = data.guideSummary || '';
         document.getElementById('flightInTime').value = data.flightInTime || '';
-        document.getElementById('flightInAirport').value = data.flightInAirport || '';
+        document.getElementById('flightInNo').value = data.flightInNo || '';
+        document.getElementById('flightInDep').value = data.flightInDep || '';
+        document.getElementById('flightInArr').value = data.flightInArr || '';
         document.getElementById('flightOutTime').value = data.flightOutTime || '';
-        document.getElementById('flightOutAirport').value = data.flightOutAirport || '';
+        document.getElementById('flightOutNo').value = data.flightOutNo || '';
+        document.getElementById('flightOutDep').value = data.flightOutDep || '';
+        document.getElementById('flightOutArr').value = data.flightOutArr || '';
 
         const hotelsContainer = document.getElementById('hotelsContainer');
         hotelsContainer.innerHTML = '';
@@ -1018,9 +1044,13 @@
         const guideSubtitle = (document.getElementById('guideSubtitle').value || '').trim();
         const guideSummary = (document.getElementById('guideSummary').value || '').trim();
         const flightInTime = (document.getElementById('flightInTime').value || '').trim();
-        const flightInAirport = (document.getElementById('flightInAirport').value || '').trim();
+        const flightInNo = (document.getElementById('flightInNo').value || '').trim();
+        const flightInDep = (document.getElementById('flightInDep').value || '').trim();
+        const flightInArr = (document.getElementById('flightInArr').value || '').trim();
         const flightOutTime = (document.getElementById('flightOutTime').value || '').trim();
-        const flightOutAirport = (document.getElementById('flightOutAirport').value || '').trim();
+        const flightOutNo = (document.getElementById('flightOutNo').value || '').trim();
+        const flightOutDep = (document.getElementById('flightOutDep').value || '').trim();
+        const flightOutArr = (document.getElementById('flightOutArr').value || '').trim();
         const safeDbUrl = JSON.stringify((document.getElementById('firebaseDbUrl').value || '').trim());
         const safeRoomId = JSON.stringify((document.getElementById('firebaseRoomId').value || '').trim() || "default_trip");
         
@@ -1325,12 +1355,20 @@
             </div>
         </div>
         ${summaryHtml ? `<div class="summary-card"><div class="summary-title">🌟 本次行程核心摘要</div><ul class="summary-list editable-target">${summaryHtml}</ul></div>` : ''}
-        <details class="menu-item">
+            <details class="menu-item">
             <summary class="menu-title">✈️ 1. 班機時間</summary>
             <div class="menu-content">
-                <div class="card" style="margin-bottom: 0;">
-                    <b>去程時間：</b><span class="editable-target">${flightInTime || '未填寫'}</span>（<b>出發機場與抵達機場：</b><span class="editable-target">${flightInAirport || '未填寫'}</span>）<br><br>
-                    <b>回程時間：</b><span class="editable-target">${flightOutTime || '未填寫'}</span>（<b>出發機場與抵達機場：</b><span class="editable-target">${flightOutAirport || '未填寫'}</span>）                </div>
+                <div class="card" style="margin-bottom: 0; line-height: 1.8;">
+                    <b>去程時間：</b><span class="editable-target">${flightInTime || '未填寫'}</span> &nbsp;|&nbsp; 
+                    <b>班機代號：</b><span class="editable-target">${flightInNo || '未填寫'}</span> &nbsp;|&nbsp; 
+                    <b>出發機場：</b><span class="editable-target">${flightInDep || '未填寫'}</span> &nbsp;|&nbsp; 
+                    <b>抵達機場：</b><span class="editable-target">${flightInArr || '未填寫'}</span>
+                    <br><br>
+                    <b>回程時間：</b><span class="editable-target">${flightOutTime || '未填寫'}</span> &nbsp;|&nbsp; 
+                    <b>班機：</b><span class="editable-target">${flightOutNo || '未填寫'}</span> &nbsp;|&nbsp; 
+                    <b>出發機場：</b><span class="editable-target">${flightOutDep || '未填寫'}</span> &nbsp;|&nbsp; 
+                    <b>抵達機場：</b><span class="editable-target">${flightOutArr || '未填寫'}</span>
+                </div>
             </div>
         </details>
         <details class="menu-item">

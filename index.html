@@ -699,7 +699,7 @@
             </div>
             <div class="row" style="margin-bottom: 8px;">
                 <div class="col form-group" style="margin-bottom:0;">
-                    <label>飯店中文名稱：</label>
+                    <label>飯店中文名稱：<span style="font-size:11px; color:#718096; font-weight:normal;">（輸入的資訊會自動產生 Google 地圖連結）</span></label>
                     <input type="text" class="hotel-name" placeholder="例：千禧三井花園飯店 東京" value="${hData.name || ''}">
                 </div>
                 <div class="col form-group" style="margin-bottom:0;">
@@ -708,7 +708,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>飯店地址 (手冊 Google 地圖以此連結為主)：</label>
+                <label>飯店地址：<span style="font-size:11px; color:#718096; font-weight:normal;">（輸入的資訊會自動產生 Google 地圖連結）</span></label>
                 <input type="text" class="hotel-address" placeholder="例：東京都中央區銀座 5-11-1" value="${hData.address || ''}">
             </div>
             <div class="form-group" style="margin-bottom:0;">
@@ -842,7 +842,7 @@
             </div>
             <div class="form-group" style="margin-bottom:6px;">
                 <label style="font-size:12px; color:#718096; margin-bottom:2px;">交通路線：</label>
-                <input type="text" class="spot-trans" value="${spotData.trans || ''}" placeholder="例：銀座線 ➔ 虎之門站 (G09)">
+                <input type="text" class="spot-trans" value="${spotData.trans || ''}" placeholder="例：搭計程車15分 / 搭JR約30分 / 步行10分見7-11左轉">
             </div>
             <div class="route-generator-box">
                 <div style="font-size: 12px; font-weight: bold; color: var(--highlight); margin-bottom: 4px;">🗺️ Google Maps 導航生成器</div>
@@ -1105,8 +1105,15 @@
                 const transHtml = formatValue(trans, '例：都營淺草線 / 日比谷線「東銀座站」A1 出口直通');
 
                 hotelsHtml += `
-                <div class="card" style="margin-bottom: ${idx === hotelBlocks.length - 1 ? '0' : '10px'};">
-                    <div class="editable-target ${!checkIn && !checkOut ? 'is-placeholder' : ''}" style="font-size: 13.5px; color: var(--accent); font-weight: bold; margin-bottom: 4px;" data-placeholder="(例：📅 入住期間：2026-08-15 至 2026-08-19)">${dateDisplay}</div>
+                <div class="card hotel-card-item" style="margin-bottom: ${idx === hotelBlocks.length - 1 ? '0' : '10px'};">
+                    <button type="button" class="del-hotel-item-btn" onclick="this.closest('.hotel-card-item').remove()">✕ 刪除飯店</button>
+                    <div class="hotel-date-row">
+                        <b>📅 入住期間：</b>
+                        <input type="date" class="hotel-inline-date hotel-in-date" value="${checkIn}" onchange="updateHotelDateText(this)">
+                        <span>至</span>
+                        <input type="date" class="hotel-inline-date hotel-out-date" value="${checkOut}" onchange="updateHotelDateText(this)">
+                        <span class="hotel-date-text editable-target ${!checkIn && !checkOut ? 'is-placeholder' : ''}" data-placeholder="(例：📅 入住期間：2026-08-15 至 2026-08-19)">${dateDisplay}</span>
+                    </div>
                     <b>飯店名稱：</b>${nameHtml} ${engName ? `<span class="editable-target">(${engName})</span>` : ''}<br>
                     <b>地址：</b>${addrHtml}<br>
                     <b>交通引導：</b>${transHtml}
@@ -1115,7 +1122,15 @@
         });
         if (!hotelsHtml) {
             hotelsHtml = `
-            <div class="card" style="margin-bottom:0;">
+            <div class="card hotel-card-item" style="margin-bottom:0;">
+                <button type="button" class="del-hotel-item-btn" onclick="this.closest('.hotel-card-item').remove()">✕ 刪除飯店</button>
+                <div class="hotel-date-row">
+                    <b>📅 入住期間：</b>
+                    <input type="date" class="hotel-inline-date hotel-in-date" onchange="updateHotelDateText(this)">
+                    <span>至</span>
+                    <input type="date" class="hotel-inline-date hotel-out-date" onchange="updateHotelDateText(this)">
+                    <span class="hotel-date-text editable-target is-placeholder" data-placeholder="(例：📅 入住期間：2026-08-15 至 2026-08-19)">(例：📅 入住期間：2026-08-15 至 2026-08-19)</span>
+                </div>
                 <b>飯店名稱：</b><a class="map-link editable-target spot-map-link is-placeholder" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：千禧三井花園飯店 東京)">(例：千禧三井花園飯店 東京)</a><br>
                 <b>地址：</b><a class="map-link editable-target spot-map-link is-placeholder" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：東京都中央區銀座 5-11-1)">(例：東京都中央區銀座 5-11-1)</a><br>
                 <b>交通引導：</b><span class="editable-target is-placeholder" data-placeholder="(例：東銀座站 A1 出口直通)">(例：東銀座站 A1 出口直通)</span>
@@ -1148,7 +1163,7 @@
                         spotDisplayHtml
                     ].filter(Boolean).join(' ');
 
-                    const transHtml = formatValue(trans, '例：搭乘地鐵至車站');
+                    const transHtml = formatValue(trans, '例：搭計程車15分 / 搭JR約30分 / 步行10分見7-11左轉');
                     const noteHtml = formatValue(note, '例：品嚐招牌美食或注意事項說明');
 
                     spotsHtml += `
@@ -1162,7 +1177,7 @@
                         <div class="trans-info">
                             <b>交通路線: </b>${transHtml} 
                             <span class="route-link-wrapper">${routeUrl ? `<a class="route-btn" href="${routeUrl}" target="_blank">📍【google路線】</a>` : ''}</span>
-                            <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 設定 Google 路線</button>
+                            <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 點我編輯可生成 Google 路線</button>
                         </div>
                         <div class="note-info">${noteHtml}</div>
                     </div>`;
@@ -1302,21 +1317,30 @@
     
     .del-item-btn { display: none; background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
     .del-day-btn { display: none; position: absolute; top: 10px; right: 38px; background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 2px 8px; font-size: 11.5px; font-weight: bold; cursor: pointer; z-index: 5; }
+    .del-hotel-item-btn { display: none; position: absolute; top: 10px; right: 10px; background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 3px 8px; font-size: 11.5px; font-weight: bold; cursor: pointer; z-index: 5; }
     .del-row-btn { display: none; background: #e53e3e; color: #fff; border: none; border-radius: 3px; padding: 2px 6px; font-size: 11px; cursor: pointer; }
     .btn-set-route { display: none; background: #38a169; color: #fff; border: none; border-radius: 12px; padding: 2px 8px; font-size: 11.5px; font-weight: bold; cursor: pointer; margin-left: 6px; }
     .btn-edit-link { display: none; background: #4a5568; color: #fff; border: none; border-radius: 12px; padding: 2px 8px; font-size: 11.5px; font-weight: bold; cursor: pointer; margin-left: 6px; }
 
-    .spot-order-actions { display: none; position: absolute; top: 2px; right: 2px; gap: 4px; z-index: 5; }
-    .btn-order { background: #4a5568; color: #fff; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
+    /* 飯店日期選取器 */
+    .hotel-inline-date { display: none; padding: 2px 6px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px; font-family: inherit; margin: 0 4px; }
+    .hotel-hint-text { display: none; font-size: 11px; color: #718096; font-weight: normal; margin-left: 4px; }
 
     body.is-editing .inline-add-spot-btn,
     body.is-editing .inline-add-section-btn,
     body.is-editing .del-item-btn,
     body.is-editing .del-day-btn,
+    body.is-editing .del-hotel-item-btn,
     body.is-editing .del-row-btn,
     body.is-editing .btn-set-route,
     body.is-editing .btn-edit-link,
+    body.is-editing .hotel-inline-date,
+    body.is-editing .hotel-hint-text,
     body.is-editing .spot-order-actions { display: inline-flex; }
+    body.is-editing .hotel-date-text { display: none; }
+
+    .spot-order-actions { display: none; position: absolute; top: 2px; right: 2px; gap: 4px; z-index: 5; }
+    .btn-order { background: #4a5568; color: #fff; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
     .tokyo-hero-banner { position: relative; background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 60%, #415a77 100%); color: #ffffff; padding: 24px 18px; border-radius: 12px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden; }
     .tokyo-hero-banner::before { content: ""; position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(230,57,70,0.85) 0%, rgba(230,57,70,0) 70%); border-radius: 50%; z-index: 1; }
@@ -1377,7 +1401,7 @@
 
     @media print {
         body { padding-top: 0 !important; background: #fff !important; }
-        .top-floating-bar, .sync-badge, .inline-add-spot-btn, .inline-add-section-btn, .del-item-btn, .del-day-btn, .del-row-btn, .btn-set-route, .btn-edit-link, .spot-order-actions { display: none !important; }
+        .top-floating-bar, .sync-badge, .inline-add-spot-btn, .inline-add-section-btn, .del-item-btn, .del-day-btn, .del-hotel-item-btn, .del-row-btn, .btn-set-route, .btn-edit-link, .spot-order-actions, .hotel-inline-date, .hotel-hint-text { display: none !important; }
         details { display: block !important; border: 1.5px solid #cbd5e0 !important; margin-bottom: 14px !important; }
         summary.menu-title { display: block !important; background-color: #1a2a3a !important; color: #ffffff !important; padding: 8px 12px !important; font-size: 15px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         summary.menu-title::after { display: none !important; }
@@ -1415,12 +1439,12 @@
             <div class="menu-content">
                 <div class="card" style="margin-bottom: 0; line-height: 1.8;">
                     <b>去程時間：</b>${formatValue(flightInTime, '例：2026/8/15(六) 06:35 > 11:15')} &nbsp;|&nbsp; 
-                    <b>班機：</b>${formatValue(flightInNo, '例：BR198')} &nbsp;|&nbsp; 
+                    <b>班機代碼：</b>${formatValue(flightInNo, '例：BR198')} &nbsp;|&nbsp; 
                     <b>出發機場：</b>${formatValue(flightInDep, '例：桃園機場 T2')} &nbsp;|&nbsp; 
                     <b>抵達機場：</b>${formatValue(flightInArr, '例：成田機場 T1')}
                     <br><br>
                     <b>回程時間：</b>${formatValue(flightOutTime, '例：2026/8/19(三) 14:00 > 16:55')} &nbsp;|&nbsp; 
-                    <b>班機：</b>${formatValue(flightOutNo, '例：BR197')} &nbsp;|&nbsp; 
+                    <b>班機代碼：</b>${formatValue(flightOutNo, '例：BR197')} &nbsp;|&nbsp; 
                     <b>出發機場：</b>${formatValue(flightOutDep, '例：成田機場 T1')} &nbsp;|&nbsp; 
                     <b>抵達機場：</b>${formatValue(flightOutArr, '例：桃園機場 T2')}
                 </div>
@@ -1428,7 +1452,10 @@
         </details>
         <details class="menu-item">
             <summary class="menu-title">🏨 2. 飯店資訊</summary>
-            <div class="menu-content">${hotelsHtml}</div>
+            <div class="menu-content" id="hotelsListContent">
+                <div id="hotelsWrapper">${hotelsHtml}</div>
+                <button type="button" class="inline-add-section-btn" onclick="addNewHotelBlock()">➕ 新增飯店</button>
+            </div>
         </details>
         <details class="menu-item">
             <summary class="menu-title">🗓️ 3. 每日行程與交通</summary>
@@ -1481,6 +1508,44 @@
         }
     });
 
+    // 飯店日期選取器更新文字
+    function updateHotelDateText(input) {
+        const row = input.closest('.hotel-date-row');
+        const inDate = row.querySelector('.hotel-in-date').value;
+        const outDate = row.querySelector('.hotel-out-date').value;
+        const textSpan = row.querySelector('.hotel-date-text');
+
+        if (inDate || outDate) {
+            textSpan.textContent = '📅 入住期間：' + (inDate || '未指定') + ' 至 ' + (outDate || '未指定');
+            textSpan.classList.remove('is-placeholder');
+        } else {
+            textSpan.textContent = '(例：📅 入住期間：2026-08-15 至 2026-08-19)';
+            textSpan.classList.add('is-placeholder');
+        }
+    }
+
+    // 新增飯店功能（手冊編輯模式直出）
+    function addNewHotelBlock() {
+        const wrapper = document.getElementById('hotelsWrapper');
+        const newHotel = document.createElement('div');
+        newHotel.className = 'card hotel-card-item';
+        newHotel.style.marginBottom = '10px';
+        newHotel.innerHTML = \`
+            <button type="button" class="del-hotel-item-btn" onclick="this.closest('.hotel-card-item').remove()">✕ 刪除飯店</button>
+            <div class="hotel-date-row">
+                <b>📅 入住期間：</b>
+                <input type="date" class="hotel-inline-date hotel-in-date" onchange="updateHotelDateText(this)">
+                <span>至</span>
+                <input type="date" class="hotel-inline-date hotel-out-date" onchange="updateHotelDateText(this)">
+                <span class="hotel-date-text editable-target is-placeholder" data-placeholder="(例：📅 入住期間：2026-08-15 至 2026-08-19)">(例：📅 入住期間：2026-08-15 至 2026-08-19)</span>
+            </div>
+            <b>飯店名稱：</b><a class="map-link editable-target spot-map-link is-placeholder" contenteditable="true" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：飯店中文名稱)">(例：飯店中文名稱)</a> <span class="hotel-hint-text">（輸入的資訊會自動產生 Google 地圖連結）</span><br>
+            <b>地址：</b><a class="map-link editable-target spot-map-link is-placeholder" contenteditable="true" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：飯店地址)">(例：飯店地址)</a> <span class="hotel-hint-text">（輸入的資訊會自動產生 Google 地圖連結）</span><br>
+            <b>交通引導：</b><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：鄰近車站出口與路線指引)">(例：鄰近車站出口與路線指引)</span>
+        \`;
+        wrapper.appendChild(newHotel);
+    }
+
     // 景點時段上移 / 下移排序
     function moveSpotItem(btn, direction) {
         const item = btn.closest('.item-box');
@@ -1498,7 +1563,7 @@
         }
     }
 
-    // 監聽景點文字修改：失焦自動更新 Google Maps 超連結
+    // 監聽景點/飯店文字修改：失焦自動更新 Google Maps 超連結
     document.addEventListener('focusout', function(e) {
         if (e.target && e.target.classList.contains('spot-map-link')) {
             const newText = e.target.textContent.trim();
@@ -1590,9 +1655,9 @@
                 <a class="map-link editable-target spot-map-link is-placeholder" contenteditable="true" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：新增景點名稱)">(例：新增景點名稱)</a>
             </div>
             <div class="trans-info">
-                <b>交通路線: </b><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：搭乘地鐵至車站)">(例：搭乘地鐵至車站)</span>
+                <b>交通路線: </b><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：搭計程車15分 / 搭JR約30分 / 步行10分見7-11左轉)">(例：搭計程車15分 / 搭JR約30分 / 步行10分見7-11左轉)</span>
                 <span class="route-link-wrapper"></span>
-                <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 設定 Google 路線</button>
+                <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 點我編輯可生成 Google 路線</button>
             </div>
             <div class="note-info"><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：備註事項說明)">(例：備註事項說明)</span></div>
         \`;
@@ -1620,9 +1685,9 @@
                             <a class="map-link editable-target spot-map-link is-placeholder" contenteditable="true" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：新景點名稱)">(例：新景點名稱)</a>
                         </div>
                         <div class="trans-info">
-                            <b>交通路線: </b><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：交通規劃)">(例：交通規劃)</span>
+                            <b>交通路線: </b><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：搭計程車15分 / 搭JR約30分 / 步行10分見7-11左轉)">(例：搭計程車15分 / 搭JR約30分 / 步行10分見7-11左轉)</span>
                             <span class="route-link-wrapper"></span>
-                            <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 設定 Google 路線</button>
+                            <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 點我編輯可生成 Google 路線</button>
                         </div>
                         <div class="note-info"><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：注意事項)">(例：注意事項)</span></div>
                     </div>

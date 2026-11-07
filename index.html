@@ -101,8 +101,9 @@
     .row {
         display: flex;
         gap: 8px;
+        flex-wrap: wrap;
     }
-    .col { flex: 1; }
+    .col { flex: 1; min-width: 140px; }
 
     .day-block {
         border: 1.8px solid #cbd5e0;
@@ -333,7 +334,7 @@
             <!-- 去程 -->
             <div class="row">
                 <div class="col form-group" style="flex: 1.2;">
-                    <label>去程時間 (輸入日期如 2026/8/15 )：</label>
+                    <label>去程時間 (輸入日期如 2026/8/15 自動推算天數)：</label>
                     <input type="text" id="flightInTime" placeholder="例：2026/8/15(六) 06:35 > 11:15">
                 </div>
                 <div class="col form-group" style="flex: 0.8;">
@@ -369,6 +370,7 @@
                 </div>
             </div>
         </div>
+
         <!-- 2. 飯店資訊 -->
         <div class="form-section">
             <div class="section-title">🏨 2. 飯店資訊</div>
@@ -413,7 +415,7 @@
 
 <!-- 底部固定操作按鈕 -->
 <div class="action-bar">
-    <button type="button" class="btn btn-accent btn-large" id="btnPreview">👁️️ 即時預覽</button>
+    <button type="button" class="btn btn-accent btn-large" id="btnPreview">👁️ 即時預覽</button>
     <button type="button" class="btn btn-secondary btn-large" id="btnPrintPdf">📄 下載 PDF</button>
     <button type="button" class="btn btn-large" id="btnDownload">💾 下載網頁</button>
 </div>
@@ -1038,19 +1040,32 @@
         }
     }
 
-    // 生成手冊 HTML（強化：支援景點排序、路線編輯、優惠券與票券外連編輯）
+    // 輔助函式：包裝方案 C 範例 Placeholder 元素
+    function formatValue(val, placeholderText, extraClass = '') {
+        const cleanVal = (val || '').trim();
+        if (cleanVal) {
+            return `<span class="editable-target ${extraClass}">${cleanVal}</span>`;
+        }
+        return `<span class="editable-target is-placeholder ${extraClass}" data-placeholder="(${placeholderText})">(${placeholderText})</span>`;
+    }
+
+    // 生成手冊 HTML
     function generateFinalHTML() {
         const guideTitle = (document.getElementById('guideTitle').value || '').trim() || '旅遊手冊';
         const guideSubtitle = (document.getElementById('guideSubtitle').value || '').trim();
         const guideSummary = (document.getElementById('guideSummary').value || '').trim();
-        const flightInTime = (document.getElementById('flightInTime').value || '').trim();
-        const flightInNo = (document.getElementById('flightInNo').value || '').trim();
-        const flightInDep = (document.getElementById('flightInDep').value || '').trim();
-        const flightInArr = (document.getElementById('flightInArr').value || '').trim();
-        const flightOutTime = (document.getElementById('flightOutTime').value || '').trim();
-        const flightOutNo = (document.getElementById('flightOutNo').value || '').trim();
-        const flightOutDep = (document.getElementById('flightOutDep').value || '').trim();
-        const flightOutArr = (document.getElementById('flightOutArr').value || '').trim();
+        
+        // 班機資訊（拆分為 4 欄）
+        const flightInTime = document.getElementById('flightInTime').value;
+        const flightInNo = document.getElementById('flightInNo').value;
+        const flightInDep = document.getElementById('flightInDep').value;
+        const flightInArr = document.getElementById('flightInArr').value;
+        
+        const flightOutTime = document.getElementById('flightOutTime').value;
+        const flightOutNo = document.getElementById('flightOutNo').value;
+        const flightOutDep = document.getElementById('flightOutDep').value;
+        const flightOutArr = document.getElementById('flightOutArr').value;
+
         const safeDbUrl = JSON.stringify((document.getElementById('firebaseDbUrl').value || '').trim());
         const safeRoomId = JSON.stringify((document.getElementById('firebaseRoomId').value || '').trim() || "default_trip");
         
@@ -1068,24 +1083,43 @@
             const address = (hb.querySelector('.hotel-address').value || '').trim();
             const trans = (hb.querySelector('.hotel-trans').value || '').trim();
 
-            if (name || address) {
-                const dateInfo = (checkIn || checkOut) 
-                    ? `<div class="editable-target" style="font-size: 13.5px; color: var(--accent); font-weight: bold; margin-bottom: 4px;">📅 入住期間：${checkIn || '未指定'} 至 ${checkOut || '未指定'}</div>`
-                    : '';
-                const mapTarget = address || name;
+            if (name || address || checkIn || checkOut) {
+                let dateDisplay = '';
+                if (checkIn || checkOut) {
+                    dateDisplay = `📅 入住期間：${checkIn || '未指定'} 至 ${checkOut || '未指定'}`;
+                } else {
+                    dateDisplay = `(例：📅 入住期間：2026-08-15 至 2026-08-19)`;
+                }
+
+                const mapTarget = address || name || '東京車站';
                 const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapTarget)}`;
+
+                const nameHtml = name 
+                    ? `<a class="map-link editable-target spot-map-link" href="${searchUrl}" target="_blank">${name}</a>`
+                    : `<a class="map-link editable-target spot-map-link is-placeholder" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：千禧三井花園飯店 東京)">(例：千禧三井花園飯店 東京)</a>`;
+
+                const addrHtml = address
+                    ? `<a class="map-link editable-target spot-map-link" href="${searchUrl}" target="_blank">${address}</a>`
+                    : `<a class="map-link editable-target spot-map-link is-placeholder" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：東京都中央區銀座 5-11-1)">(例：東京都中央區銀座 5-11-1)</a>`;
+
+                const transHtml = formatValue(trans, '例：都營淺草線 / 日比谷線「東銀座站」A1 出口直通');
 
                 hotelsHtml += `
                 <div class="card" style="margin-bottom: ${idx === hotelBlocks.length - 1 ? '0' : '10px'};">
-                    ${dateInfo}
-                    <b>飯店名稱：</b><a class="map-link editable-target spot-map-link" href="${searchUrl}" target="_blank">${name || '未填寫'}</a> ${engName ? `<span class="editable-target">(${engName})</span>` : ''}<br>
-                    <b>地址：</b>${address ? `<a class="map-link editable-target spot-map-link" href="${searchUrl}" target="_blank">${address}</a>` : '未填寫'}<br>
-                    <b>交通引導：</b><span class="editable-target">${trans || '未填寫'}</span>
+                    <div class="editable-target ${!checkIn && !checkOut ? 'is-placeholder' : ''}" style="font-size: 13.5px; color: var(--accent); font-weight: bold; margin-bottom: 4px;" data-placeholder="(例：📅 入住期間：2026-08-15 至 2026-08-19)">${dateDisplay}</div>
+                    <b>飯店名稱：</b>${nameHtml} ${engName ? `<span class="editable-target">(${engName})</span>` : ''}<br>
+                    <b>地址：</b>${addrHtml}<br>
+                    <b>交通引導：</b>${transHtml}
                 </div>`;
             }
         });
         if (!hotelsHtml) {
-            hotelsHtml = `<div class="card" style="margin-bottom:0;">未設定飯店資訊</div>`;
+            hotelsHtml = `
+            <div class="card" style="margin-bottom:0;">
+                <b>飯店名稱：</b><a class="map-link editable-target spot-map-link is-placeholder" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：千禧三井花園飯店 東京)">(例：千禧三井花園飯店 東京)</a><br>
+                <b>地址：</b><a class="map-link editable-target spot-map-link is-placeholder" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：東京都中央區銀座 5-11-1)">(例：東京都中央區銀座 5-11-1)</a><br>
+                <b>交通引導：</b><span class="editable-target is-placeholder" data-placeholder="(例：東銀座站 A1 出口直通)">(例：東銀座站 A1 出口直通)</span>
+            </div>`;
         }
 
         // 行程
@@ -1106,11 +1140,16 @@
                     if (spot) {
                         const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot)}`;
                         spotDisplayHtml = `<a class="map-link editable-target spot-map-link" href="${searchUrl}" target="_blank">${spot}</a>`;
+                    } else {
+                        spotDisplayHtml = `<a class="map-link editable-target spot-map-link is-placeholder" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：景點名稱)">(例：景點名稱)</a>`;
                     }
                     const headerDisplay = [
-                        time ? `<span class="editable-target">${time}</span>` : '', 
+                        time ? `<span class="editable-target">${time}</span>` : `<span class="editable-target is-placeholder" data-placeholder="(例：14:00)">(例：14:00)</span>`, 
                         spotDisplayHtml
                     ].filter(Boolean).join(' ');
+
+                    const transHtml = formatValue(trans, '例：搭乘地鐵至車站');
+                    const noteHtml = formatValue(note, '例：品嚐招牌美食或注意事項說明');
 
                     spotsHtml += `
                     <div class="item-box">
@@ -1121,19 +1160,20 @@
                         </div>
                         ${headerDisplay ? `<div class="time-spot">${headerDisplay}</div>` : ''}
                         <div class="trans-info">
-                            <b>交通路線: </b><span class="editable-target">${trans || '未設定路線'}</span> 
+                            <b>交通路線: </b>${transHtml} 
                             <span class="route-link-wrapper">${routeUrl ? `<a class="route-btn" href="${routeUrl}" target="_blank">📍【google路線】</a>` : ''}</span>
                             <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 設定 Google 路線</button>
                         </div>
-                        ${note ? `<div class="note-info editable-target">${note}</div>` : ''}
+                        <div class="note-info">${noteHtml}</div>
                     </div>`;
                 }
             });
 
+            const dayTitleDisplay = dayTitle || '(例：Day 1｜抵達與市區探索)';
             daysHtml += `
             <details class="sub-menu-item">
                 <button type="button" class="del-day-btn" onclick="this.closest('.sub-menu-item').remove()">✕ 刪除當天</button>
-                <summary class="sub-menu-title editable-target">${dayTitle || '當日行程'}</summary>
+                <summary class="sub-menu-title editable-target ${!dayTitle ? 'is-placeholder' : ''}" data-placeholder="(例：Day 1｜當日行程規劃)">${dayTitleDisplay}</summary>
                 <div class="sub-menu-content">
                     <div class="spots-list-wrapper">${spotsHtml}</div>
                     <button type="button" class="inline-add-spot-btn" onclick="addNewSpotToDay(this)">+ 新增景點時段</button>
@@ -1147,7 +1187,8 @@
             const cat = (sr.querySelector('.shop-cat').value || '').trim();
             const desc = (sr.querySelector('.shop-desc').value || '').trim();
             if (cat) {
-                shopHtml += `<tr><td><b class="editable-target">${cat}</b></td><td class="editable-target">${desc}</td><td style="text-align: center;"><button type="button" class="del-row-btn" onclick="this.closest('tr').remove()">✕</button></td></tr>`;
+                const descHtml = formatValue(desc, '例：退稅指引與採購清單');
+                shopHtml += `<tr><td><b class="editable-target">${cat}</b></td><td>${descHtml}</td><td style="text-align: center;"><button type="button" class="del-row-btn" onclick="this.closest('tr').remove()">✕</button></td></tr>`;
             }
         });
 
@@ -1160,6 +1201,7 @@
 
             if (title || url) {
                 const descHtml = desc ? desc.replace(/\n/g, '<br>') : '';
+                const descOutput = descHtml ? `<div class="editable-target" style="font-size: 13.5px; color: var(--sub-text); margin-top: 10px;">${descHtml}</div>` : `<div class="editable-target is-placeholder" style="font-size: 13.5px; margin-top: 10px;" data-placeholder="(例：消費滿額享折扣優惠)">(例：消費滿額享折扣優惠)</div>`;
                 subCouponsHtml += `
                 <details class="sub-menu-item">
                     <button type="button" class="del-day-btn" onclick="this.closest('.sub-menu-item').remove()">✕ 刪除優惠券</button>
@@ -1168,7 +1210,7 @@
                         <div class="card" style="background-color: #fffaf0; border-color: #f6ad55; margin-bottom: 0;">
                             <span class="coupon-link-wrapper">${url ? `<a class="coupon-btn" href="${url}" target="_blank">👉 點此開啟電子優惠券</a>` : ''}</span>
                             <button type="button" class="btn-edit-link" onclick="editCouponUrl(this)">🔗 換連結</button>
-                            ${descHtml ? `<div class="editable-target" style="font-size: 13.5px; color: var(--sub-text); margin-top: 10px;">${descHtml}</div>` : ''}
+                            ${descOutput}
                         </div>
                     </div>
                 </details>`;
@@ -1199,11 +1241,14 @@
                     </a>
                 </div>` : '';
 
+                const titleOutput = formatValue(title, '例：JR 列車 QRCODE', 'doc-card-title');
+                const noteOutput = formatValue(note, '例：回程交通：從札幌到新千歲機場坐 JR 列車');
+
                 docItemsHtml += `
                 <div class="card" style="margin-bottom: 10px;">
                     <button type="button" class="del-item-btn" onclick="this.closest('.card').remove()">✕</button>
-                    <div class="editable-target" style="font-size: 15.5px; font-weight: bold; color: var(--primary);">${title || '憑證文件'}</div>
-                    <div class="editable-target" style="font-size: 13.5px; color: var(--sub-text); margin-top: 4px;">${note || ''}</div>
+                    <div style="font-size: 15.5px; font-weight: bold; color: var(--primary);">${titleOutput}</div>
+                    <div style="font-size: 13.5px; color: var(--sub-text); margin-top: 4px;">${noteOutput}</div>
                     <div class="doc-link-wrapper">${linkButton}</div>
                     <button type="button" class="btn-edit-link" style="margin-top: 6px;" onclick="editDocLinkUrl(this)">🔗 換連結</button>
                 </div>`;
@@ -1236,6 +1281,16 @@
     .top-btn-pdf { background: #2b6cb0; }
     body.is-editing #guideEditToggleBtn { background: #e53e3e; }
     body.is-editing .editable-target { outline: 1.5px dashed var(--accent) !important; background-color: rgba(200, 109, 81, 0.08) !important; border-radius: 3px; min-width: 20px; display: inline-block; }
+
+    /* 方案 C 專屬樣式：Placeholder 灰階斜體提示 */
+    .is-placeholder {
+        color: #9ca3af !important;
+        font-style: italic !important;
+    }
+    a.is-placeholder {
+        text-decoration-style: dotted !important;
+        color: #93c5fd !important;
+    }
 
     .sync-badge { position: fixed; top: 12px; left: 12px; z-index: 10000; font-size: 11px; padding: 4px 8px; border-radius: 12px; background: rgba(0,0,0,0.7); color: #fff; display: flex; align-items: center; gap: 4px; }
     .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #48bb78; }
@@ -1296,7 +1351,7 @@
     .item-box:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
     .time-spot { font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 4px; }
     .trans-info { background-color: #f0f4f8; padding: 8px 10px; border-radius: 6px; font-size: 14.5px; color: #2d3748; margin-bottom: 4px; }
-    .note-info { font-size: 14px; color: var(--sub-text); }
+    .note-info { font-size: 14px; color: var(--sub-text); margin-top: 4px; }
     a.map-link { color: var(--highlight); text-decoration: underline; font-weight: bold; }
     a.route-btn { display: inline-flex; align-items: center; gap: 3px; background-color: #e8f0fe; color: #1a73e8; border: 1px solid #aecbfa; padding: 2px 8px; border-radius: 12px; font-size: 12.5px; font-weight: bold; text-decoration: none; margin-left: 6px; }
     a.coupon-btn { display: inline-block; background-color: #e63946; color: #ffffff; font-weight: bold; padding: 8px 14px; border-radius: 6px; text-decoration: none; margin-top: 6px; font-size: 14px; }
@@ -1355,19 +1410,19 @@
             </div>
         </div>
         ${summaryHtml ? `<div class="summary-card"><div class="summary-title">🌟 本次行程核心摘要</div><ul class="summary-list editable-target">${summaryHtml}</ul></div>` : ''}
-            <details class="menu-item">
+        <details class="menu-item">
             <summary class="menu-title">✈️ 1. 班機時間</summary>
             <div class="menu-content">
                 <div class="card" style="margin-bottom: 0; line-height: 1.8;">
-                    <b>去程時間：</b><span class="editable-target">${flightInTime || '未填寫'}</span> &nbsp;|&nbsp; 
-                    <b>班機代號：</b><span class="editable-target">${flightInNo || '未填寫'}</span> &nbsp;|&nbsp; 
-                    <b>出發機場：</b><span class="editable-target">${flightInDep || '未填寫'}</span> &nbsp;|&nbsp; 
-                    <b>抵達機場：</b><span class="editable-target">${flightInArr || '未填寫'}</span>
+                    <b>去程時間：</b>${formatValue(flightInTime, '例：2026/8/15(六) 06:35 > 11:15')} &nbsp;|&nbsp; 
+                    <b>班機：</b>${formatValue(flightInNo, '例：BR198')} &nbsp;|&nbsp; 
+                    <b>出發機場：</b>${formatValue(flightInDep, '例：桃園機場 T2')} &nbsp;|&nbsp; 
+                    <b>抵達機場：</b>${formatValue(flightInArr, '例：成田機場 T1')}
                     <br><br>
-                    <b>回程時間：</b><span class="editable-target">${flightOutTime || '未填寫'}</span> &nbsp;|&nbsp; 
-                    <b>班機：</b><span class="editable-target">${flightOutNo || '未填寫'}</span> &nbsp;|&nbsp; 
-                    <b>出發機場：</b><span class="editable-target">${flightOutDep || '未填寫'}</span> &nbsp;|&nbsp; 
-                    <b>抵達機場：</b><span class="editable-target">${flightOutArr || '未填寫'}</span>
+                    <b>回程時間：</b>${formatValue(flightOutTime, '例：2026/8/19(三) 14:00 > 16:55')} &nbsp;|&nbsp; 
+                    <b>班機：</b>${formatValue(flightOutNo, '例：BR197')} &nbsp;|&nbsp; 
+                    <b>出發機場：</b>${formatValue(flightOutDep, '例：成田機場 T1')} &nbsp;|&nbsp; 
+                    <b>抵達機場：</b>${formatValue(flightOutArr, '例：桃園機場 T2')}
                 </div>
             </div>
         </details>
@@ -1401,6 +1456,31 @@
     </div>
 
     <script>
+    // 方案 C 核心：聚焦帶有 Placeholder 的元素時自動全選內容
+    document.addEventListener('focusin', function(e) {
+        if (e.target && e.target.classList.contains('editable-target') && e.target.classList.contains('is-placeholder')) {
+            const range = document.createRange();
+            range.selectNodeContents(e.target);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    });
+
+    // 方案 C 核心：失焦時若已填寫真實文字，自動移除 Placeholder 樣式
+    document.addEventListener('focusout', function(e) {
+        if (e.target && e.target.classList.contains('editable-target')) {
+            const text = e.target.textContent.trim();
+            const placeholder = e.target.getAttribute('data-placeholder');
+            if (text && text !== placeholder) {
+                e.target.classList.remove('is-placeholder');
+            } else if (!text && placeholder) {
+                e.target.textContent = placeholder;
+                e.target.classList.add('is-placeholder');
+            }
+        }
+    });
+
     // 景點時段上移 / 下移排序
     function moveSpotItem(btn, direction) {
         const item = btn.closest('.item-box');
@@ -1422,7 +1502,8 @@
     document.addEventListener('focusout', function(e) {
         if (e.target && e.target.classList.contains('spot-map-link')) {
             const newText = e.target.textContent.trim();
-            if (newText) {
+            const placeholder = e.target.getAttribute('data-placeholder');
+            if (newText && newText !== placeholder) {
                 e.target.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(newText);
             }
         }
@@ -1506,14 +1587,14 @@
             </div>
             <div class="time-spot">
                 <span class="editable-target" contenteditable="true">12:00 - 13:30</span> 
-                <a class="map-link editable-target spot-map-link" contenteditable="true" href="https://www.google.com/maps/search/?api=1&query=%E6%96%B0%E6%99%AF%E9%BB%9E" target="_blank">新增景點名稱</a>
+                <a class="map-link editable-target spot-map-link is-placeholder" contenteditable="true" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：新增景點名稱)">(例：新增景點名稱)</a>
             </div>
             <div class="trans-info">
-                <b>交通路線: </b><span class="editable-target" contenteditable="true">路線資訊說明</span>
+                <b>交通路線: </b><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：搭乘地鐵至車站)">(例：搭乘地鐵至車站)</span>
                 <span class="route-link-wrapper"></span>
                 <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 設定 Google 路線</button>
             </div>
-            <div class="note-info editable-target" contenteditable="true">備註事項說明</div>
+            <div class="note-info"><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：備註事項說明)">(例：備註事項說明)</span></div>
         \`;
         wrapper.appendChild(newBox);
     }
@@ -1536,14 +1617,14 @@
                         </div>
                         <div class="time-spot">
                             <span class="editable-target" contenteditable="true">09:00</span> 
-                            <a class="map-link editable-target spot-map-link" contenteditable="true" href="https://www.google.com/maps/search/?api=1&query=%E6%96%B0%E6%99%AF%E9%BB%9E" target="_blank">新景點名稱</a>
+                            <a class="map-link editable-target spot-map-link is-placeholder" contenteditable="true" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：新景點名稱)">(例：新景點名稱)</a>
                         </div>
                         <div class="trans-info">
-                            <b>交通路線: </b><span class="editable-target" contenteditable="true">交通規劃</span>
+                            <b>交通路線: </b><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：交通規劃)">(例：交通規劃)</span>
                             <span class="route-link-wrapper"></span>
                             <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 設定 Google 路線</button>
                         </div>
-                        <div class="note-info editable-target" contenteditable="true">注意事項</div>
+                        <div class="note-info"><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：注意事項)">(例：注意事項)</span></div>
                     </div>
                 </div>
                 <button type="button" class="inline-add-spot-btn" onclick="addNewSpotToDay(this)">+ 新增景點時段</button>
@@ -1556,8 +1637,8 @@
         const tbody = document.querySelector('#shoppingTable tbody');
         const tr = document.createElement('tr');
         tr.innerHTML = \`
-            <td><b class="editable-target" contenteditable="true">新採買項目</b></td>
-            <td class="editable-target" contenteditable="true">購買地點與提醒說明</td>
+            <td><b class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：新採買項目)">(例：新採買項目)</b></td>
+            <td><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：購買地點與提醒說明)">(例：購買地點與提醒說明)</span></td>
             <td style="text-align: center;"><button type="button" class="del-row-btn" onclick="this.closest('tr').remove()">✕</button></td>
         \`;
         tbody.appendChild(tr);
@@ -1569,12 +1650,12 @@
         newCoupon.className = 'sub-menu-item';
         newCoupon.innerHTML = \`
             <button type="button" class="del-day-btn" onclick="this.closest('.sub-menu-item').remove()">✕ 刪除優惠券</button>
-            <summary class="sub-menu-title editable-target" contenteditable="true">新店家優惠券名稱</summary>
+            <summary class="sub-menu-title editable-target is-placeholder" contenteditable="true" data-placeholder="(例：新店家優惠券名稱)">(例：新店家優惠券名稱)</summary>
             <div class="sub-menu-content">
                 <div class="card" style="background-color: #fffaf0; border-color: #f6ad55; margin-bottom: 0;">
                     <span class="coupon-link-wrapper"><a class="coupon-btn" href="https://" target="_blank">👉 點此開啟電子優惠券</a></span>
                     <button type="button" class="btn-edit-link" onclick="editCouponUrl(this)">🔗 換連結</button>
-                    <div class="editable-target" contenteditable="true" style="font-size: 13.5px; color: var(--sub-text); margin-top: 10px;">請在此點擊輸入折扣說明</div>
+                    <div class="editable-target is-placeholder" contenteditable="true" style="font-size: 13.5px; margin-top: 10px;" data-placeholder="(例：請在此點擊輸入折扣說明)">(例：請在此點擊輸入折扣說明)</div>
                 </div>
             </div>
         \`;
@@ -1588,8 +1669,8 @@
         newDoc.style.marginBottom = '10px';
         newDoc.innerHTML = \`
             <button type="button" class="del-item-btn" onclick="this.closest('.card').remove()">✕</button>
-            <div class="editable-target" contenteditable="true" style="font-size: 15.5px; font-weight: bold; color: var(--primary);">新文件 / 票券名稱</div>
-            <div class="editable-target" contenteditable="true" style="font-size: 13.5px; color: var(--sub-text); margin-top: 4px;">備註說明</div>
+            <div style="font-size: 15.5px; font-weight: bold; color: var(--primary);"><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：新文件 / 票券名稱)">(例：新文件 / 票券名稱)</span></div>
+            <div style="font-size: 13.5px; color: var(--sub-text); margin-top: 4px;"><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：備註說明)">(例：備註說明)</span></div>
             <div class="doc-link-wrapper">
                 <div style="margin-top: 8px;">
                     <a href="https://" target="_blank" class="doc-link-btn">

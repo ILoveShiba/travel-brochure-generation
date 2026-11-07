@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>福岡熊本6日遊</title>
+<style>
+    :root { --primary: #1a2a3a; --accent: #c86d51; --highlight: #2b6cb0; --bg: #f7f6f3; --card-bg: #ffffff; --text: #2c2a29; --sub-text: #666059; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 12px; font-size: 16px; line-height: 1.5; padding-top: 52px; }
+    
+    .top-floating-bar { position: fixed; top: 10px; right: 12px; z-index: 10000; display: flex; gap: 6px; }
+    .top-btn { background: var(--primary); color: #fff; border: 1.5px solid #fff; padding: 6px 12px; border-radius: 20px; font-size: 12.5px; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.25); cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation; }
+    .top-btn:active { transform: scale(0.96); }
+    .top-btn-pdf { background: #2b6cb0; }
+    body.is-editing #guideEditToggleBtn { background: #e53e3e; }
+    body.is-editing .editable-target { outline: 1.5px dashed var(--accent) !important; background-color: rgba(200, 109, 81, 0.08) !important; border-radius: 3px; min-width: 20px; display: inline-block; }
+
+    .sync-badge { position: fixed; top: 12px; left: 12px; z-index: 10000; font-size: 11px; padding: 4px 8px; border-radius: 12px; background: rgba(0,0,0,0.7); color: #fff; display: flex; align-items: center; gap: 4px; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #48bb78; }
+
+    /* 編輯模式動態按鈕 */
+    .inline-add-spot-btn, .inline-add-section-btn { display: none; width: 100%; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13.5px; font-weight: bold; margin-top: 10px; cursor: pointer; touch-action: manipulation; text-align: center; }
+    .inline-add-spot-btn { background: #3182ce; }
+    .inline-add-section-btn { background: #2b6cb0; }
+    
+    .del-item-btn { display: none; background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
+    .del-day-btn { display: none; position: absolute; top: 10px; right: 38px; background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 2px 8px; font-size: 11.5px; font-weight: bold; cursor: pointer; z-index: 5; }
+    .del-row-btn { display: none; background: #e53e3e; color: #fff; border: none; border-radius: 3px; padding: 2px 6px; font-size: 11px; cursor: pointer; }
+    .btn-set-route { display: none; background: #38a169; color: #fff; border: none; border-radius: 12px; padding: 2px 8px; font-size: 11.5px; font-weight: bold; cursor: pointer; margin-left: 6px; }
+    .btn-edit-link { display: none; background: #4a5568; color: #fff; border: none; border-radius: 12px; padding: 2px 8px; font-size: 11.5px; font-weight: bold; cursor: pointer; margin-left: 6px; }
+
+    .spot-order-actions { display: none; position: absolute; top: 2px; right: 2px; gap: 4px; z-index: 5; }
+    .btn-order { background: #4a5568; color: #fff; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
+
+    body.is-editing .inline-add-spot-btn,
+    body.is-editing .inline-add-section-btn,
+    body.is-editing .del-item-btn,
+    body.is-editing .del-day-btn,
+    body.is-editing .del-row-btn,
+    body.is-editing .btn-set-route,
+    body.is-editing .btn-edit-link,
+    body.is-editing .spot-order-actions { display: inline-flex; }
+
+    .tokyo-hero-banner { position: relative; background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 60%, #415a77 100%); color: #ffffff; padding: 24px 18px; border-radius: 12px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden; }
+    .tokyo-hero-banner::before { content: ""; position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(230,57,70,0.85) 0%, rgba(230,57,70,0) 70%); border-radius: 50%; z-index: 1; }
+    .hero-content { position: relative; z-index: 2; }
+    .hero-badge { display: inline-block; background-color: #e63946; color: #ffffff; font-size: 11px; font-weight: bold; letter-spacing: 1px; padding: 2px 8px; border-radius: 20px; margin-bottom: 6px; text-transform: uppercase; }
+    .hero-title { margin: 0 0 4px 0; font-size: 21px; font-weight: 800; color: #f4d068; }
+    .hero-subtitle { margin: 0; font-size: 13.5px; color: #e0e1dd; }
+    .summary-card { background: var(--card-bg); border-radius: 10px; padding: 16px; margin-bottom: 14px; border: 1px solid #e2ded9; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+    .summary-title { font-size: 17.5px; font-weight: bold; color: var(--primary); border-left: 4px solid var(--accent); padding-left: 8px; margin-bottom: 10px; }
+    .summary-list { padding-left: 18px; margin: 0; font-size: 14.5px; }
+    .summary-list li { margin-bottom: 6px; }
+    
+    details.menu-item { background-color: #ffffff; border: 1.5px solid var(--primary); border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); overflow: hidden; }
+    summary.menu-title { padding: 14px; font-size: 15.5px; font-weight: bold; color: var(--primary); cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+    summary.menu-title::-webkit-details-marker { display: none; }
+    summary.menu-title::after { content: "➔"; font-size: 14px; transition: transform 0.2s ease; }
+    details[open] > summary.menu-title { background-color: var(--primary); color: #ffffff; }
+    details[open] > summary.menu-title::after { transform: rotate(90deg); }
+    .menu-content { padding: 12px; background-color: var(--bg); border-top: 1px solid #e2ded9; }
+
+    details.sub-menu-item { position: relative; background-color: #ffffff; border: 1.5px solid var(--accent); border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+    details.sub-menu-item:last-child { margin-bottom: 0; }
+    summary.sub-menu-title { padding: 12px; font-size: 14.5px; font-weight: bold; color: var(--accent); cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    summary.sub-menu-title::-webkit-details-marker { display: none; }
+    summary.sub-menu-title::after { content: "➔"; font-size: 13px; transition: transform 0.2s ease; }
+    details[open] > summary.sub-menu-title { background-color: var(--accent); color: #ffffff; }
+    details[open] > summary.sub-menu-title::after { transform: rotate(90deg); }
+    .sub-menu-content { padding: 10px; background-color: #ffffff; border-top: 1px solid #e2ded9; }
+
+    .card { position: relative; background: var(--card-bg); border-radius: 8px; padding: 14px; margin-bottom: 12px; border: 1px solid #e2ded9; }
+    .item-box { border-bottom: 1px dotted #e0dcd5; padding-bottom: 10px; margin-bottom: 10px; position: relative; }
+    .item-box:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+    .time-spot { font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 4px; }
+    .trans-info { background-color: #f0f4f8; padding: 8px 10px; border-radius: 6px; font-size: 14.5px; color: #2d3748; margin-bottom: 4px; }
+    .note-info { font-size: 14px; color: var(--sub-text); }
+    a.map-link { color: var(--highlight); text-decoration: underline; font-weight: bold; }
+    a.route-btn { display: inline-flex; align-items: center; gap: 3px; background-color: #e8f0fe; color: #1a73e8; border: 1px solid #aecbfa; padding: 2px 8px; border-radius: 12px; font-size: 12.5px; font-weight: bold; text-decoration: none; margin-left: 6px; }
+    a.coupon-btn { display: inline-block; background-color: #e63946; color: #ffffff; font-weight: bold; padding: 8px 14px; border-radius: 6px; text-decoration: none; margin-top: 6px; font-size: 14px; }
+    
+    .doc-link-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: #2b6cb0;
+        color: #ffffff !important;
+        font-weight: bold;
+        padding: 8px 14px;
+        border-radius: 6px;
+        text-decoration: none;
+        margin-top: 8px;
+        font-size: 13.5px;
+    }
+    .doc-link-btn:hover { background-color: #2c5282; }
+
+    table.simple-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    table.simple-table th { background: #edf2f7; color: #2d3748; text-align: left; padding: 6px 8px; }
+    table.simple-table td { padding: 6px 8px; border-bottom: 1px solid #edf2f7; }
+
+    @media print {
+        body { padding-top: 0 !important; background: #fff !important; }
+        .top-floating-bar, .sync-badge, .inline-add-spot-btn, .inline-add-section-btn, .del-item-btn, .del-day-btn, .del-row-btn, .btn-set-route, .btn-edit-link, .spot-order-actions { display: none !important; }
+        details { display: block !important; border: 1.5px solid #cbd5e0 !important; margin-bottom: 14px !important; }
+        summary.menu-title { display: block !important; background-color: #1a2a3a !important; color: #ffffff !important; padding: 8px 12px !important; font-size: 15px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        summary.menu-title::after { display: none !important; }
+        summary.sub-menu-title { display: block !important; background-color: #c86d51 !important; color: #ffffff !important; padding: 6px 10px !important; font-size: 14px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        summary.sub-menu-title::after { display: none !important; }
+        details .menu-content, details .sub-menu-content { display: block !important; border: none !important; padding: 8px !important; }
+        .tokyo-hero-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .card, .item-box { page-break-inside: avoid; }
+    }
+</style>
+</head>
+<body>
+    <div class="sync-badge" id="syncStatusBadge" style="display:none;">
+        <span class="sync-dot" id="syncDot"></span>
+        <span id="syncStatusText">雲端同步中</span>
+    </div>
+
+    <!-- 頂部操作按鈕組 -->
+    <div class="top-floating-bar">
+        <button type="button" class="top-btn top-btn-pdf" id="guidePrintPdfBtn">📄 下載 PDF</button>
+        <button type="button" class="top-btn" id="guideEditToggleBtn">✏️ 編輯內容</button>
+    </div>
+
+    <div id="guideMainContent">
+        <div class="tokyo-hero-banner">
+            <div class="hero-content">
+                <span class="hero-badge">TRAVEL GUIDE</span>
+                <h1 class="hero-title editable-target">福岡熊本6日遊</h1>
+                <p class="hero-subtitle editable-target"></p>
+            </div>
+        </div>
+        <div class="summary-card"><div class="summary-title">🌟 本次行程核心摘要</div><ul class="summary-list editable-target"><li>福岡熊本6日遊</li></ul></div>
+        <details class="menu-item">
+            <summary class="menu-title">✈️ 1. 班機時間</summary>
+            <div class="menu-content">
+                <div class="card" style="margin-bottom: 0;">
+                    <b>去程：</b><span class="editable-target">福岡熊本6日遊</span>（<span class="editable-target">未填寫</span>）<br><br>
+                    <b>回程：</b><span class="editable-target">福岡熊本6日遊</span>（<span class="editable-target">未填寫</span>）
+                </div>
+            </div>
+        </details>
+        <details class="menu-item">
+            <summary class="menu-title">🏨 2. 飯店資訊</summary>
+            <div class="menu-content">
+                <div class="card" style="margin-bottom: 0;">
+                    <div class="editable-target" style="font-size: 13.5px; color: var(--accent); font-weight: bold; margin-bottom: 4px;">📅 入住期間：2026-11-07 至 2026-11-14</div>
+                    <b>飯店名稱：</b><a class="map-link editable-target spot-map-link" href="https://www.google.com/maps/search/?api=1&query=%E7%A6%8F%E5%B2%A1%E7%86%8A%E6%9C%AC6%E6%97%A5%E9%81%8A" target="_blank">福岡熊本6日遊</a> <span class="editable-target">(福岡熊本6日遊)</span><br>
+                    <b>地址：</b><a class="map-link editable-target spot-map-link" href="https://www.google.com/maps/search/?api=1&query=%E7%A6%8F%E5%B2%A1%E7%86%8A%E6%9C%AC6%E6%97%A5%E9%81%8A" target="_blank">福岡熊本6日遊</a><br>
+                    <b>交通引導：</b><span class="editable-target">福岡熊本6日遊</span>
+                </div></div>
+        </details>
+        <details class="menu-item">
+            <summary class="menu-title">🗓️ 3. 每日行程與交通</summary>
+            <div class="menu-content" id="daysListContent">
+                <div id="daysWrapper">
+            <details class="sub-menu-item">
+                <button type="button" class="del-day-btn" onclick="this.closest('.sub-menu-item').remove()">✕ 刪除當天</button>
+                <summary class="sub-menu-title editable-target">Day 1｜福岡熊本6日遊</summary>
+                <div class="sub-menu-content">
+                    <div class="spots-list-wrapper">
+                    <div class="item-box">
+                        <div class="spot-order-actions">
+                            <button type="button" class="btn-order" onclick="moveSpotItem(this, -1)">⬆</button>
+                            <button type="button" class="btn-order" onclick="moveSpotItem(this, 1)">⬇</button>
+                            <button type="button" class="del-item-btn" onclick="this.closest('.item-box').remove()">✕</button>
+                        </div>
+                        <div class="time-spot"><span class="editable-target">福岡熊本6日遊</span> <a class="map-link editable-target spot-map-link" href="https://www.google.com/maps/search/?api=1&query=%E7%A6%8F%E5%B2%A1%E7%86%8A%E6%9C%AC6%E6%97%A5%E9%81%8A" target="_blank">福岡熊本6日遊</a></div>
+                        <div class="trans-info">
+                            <b>交通路線: </b><span class="editable-target">福岡熊本6日遊</span> 
+                            <span class="route-link-wrapper"></span>
+                            <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 設定 Google 路線</button>
+                        </div>
+                        
+                    </div></div>
+                    <button type="button" class="inline-add-spot-btn" onclick="addNewSpotToDay(this)">+ 新增景點時段</button>
+                </div>
+            </details></div>
+                <button type="button" class="inline-add-section-btn" onclick="addNewDayBlock()">➕ 新增天數 (Day)</button>
+            </div>
+        </details>
+        <details class="menu-item">
+            <summary class="menu-title">🛍️ 4. 購物採買清單</summary>
+            <div class="menu-content">
+                <div class="card" style="margin-bottom: 0;">
+                    <table class="simple-table" id="shoppingTable">
+                        <thead>
+                            <tr><th>類別</th><th>建議地點與提醒</th><th style="width: 40px; text-align: center;">操作</th></tr>
+                        </thead>
+                        <tbody><tr><td><b class="editable-target">福岡熊本6日遊</b></td><td class="editable-target"></td><td style="text-align: center;"><button type="button" class="del-row-btn" onclick="this.closest('tr').remove()">✕</button></td></tr></tbody>
+                    </table>
+                    <button type="button" class="inline-add-section-btn" onclick="addNewShoppingRow()">➕ 新增購物項目</button>
+                </div>
+            </div>
+        </details>
+        
+        <details class="menu-item">
+            <summary class="menu-title">🎁 5. 專屬電子優惠券</summary>
+            <div class="menu-content" id="couponsContainer">
+                <div id="couponsWrapper"></div>
+                <button type="button" class="inline-add-section-btn" onclick="addNewCouponItem()">➕ 新增電子優惠券</button>
+            </div>
+        </details>
+        
+        <details class="menu-item">
+            <summary class="menu-title">📎 6. 電子票券與重要文件</summary>
+            <div class="menu-content" id="docsContainer">
+                <div id="docsWrapper"></div>
+                <button type="button" class="inline-add-section-btn" onclick="addNewDocItem()">➕ 新增重要文件 / 票券</button>
+            </div>
+        </details>
+    </div>
+
+    <script>
+    // 景點時段上移 / 下移排序
+    function moveSpotItem(btn, direction) {
+        const item = btn.closest('.item-box');
+        if (!item) return;
+        if (direction === -1) {
+            const prev = item.previousElementSibling;
+            if (prev && prev.classList.contains('item-box')) {
+                item.parentNode.insertBefore(item, prev);
+            }
+        } else if (direction === 1) {
+            const next = item.nextElementSibling;
+            if (next && next.classList.contains('item-box')) {
+                item.parentNode.insertBefore(next, item);
+            }
+        }
+    }
+
+    // 監聽景點文字修改：失焦自動更新 Google Maps 超連結
+    document.addEventListener('focusout', function(e) {
+        if (e.target && e.target.classList.contains('spot-map-link')) {
+            const newText = e.target.textContent.trim();
+            if (newText) {
+                e.target.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(newText);
+            }
+        }
+    });
+
+    // 手動設定 / 修改 Google 路線功能
+    function editRouteForSpot(btn) {
+        const transBox = btn.closest('.trans-info');
+        const wrapper = transBox.querySelector('.route-link-wrapper');
+        const currentLink = wrapper.querySelector('a.route-btn');
+        const defaultVal = currentLink ? currentLink.href : '';
+
+        const inputVal = prompt("請輸入 Google 路線網址，或輸入「起點 / 終點」自動生成：\n(例如：札幌車站 / 小樽運河，若欲刪除請清空留白)", defaultVal);
+        if (inputVal === null) return;
+
+        const val = inputVal.trim();
+        if (!val) {
+            wrapper.innerHTML = '';
+        } else if (val.startsWith('http://') || val.startsWith('https://')) {
+            wrapper.innerHTML = '<a class="route-btn" href="' + val + '" target="_blank">📍【google路線】</a>';
+        } else if (val.includes('/') || val.includes('➔') || val.includes('到') || val.includes('-')) {
+            const parts = val.split(/[\/➔到\-]/).map(s => s.trim()).filter(Boolean);
+            if (parts.length >= 2) {
+                const autoUrl = 'https://www.google.com/maps/dir/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]);
+                wrapper.innerHTML = '<a class="route-btn" href="' + autoUrl + '" target="_blank">📍【google路線】</a>';
+            } else {
+                const searchUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(val);
+                wrapper.innerHTML = '<a class="route-btn" href="' + searchUrl + '" target="_blank">📍【google路線】</a>';
+            }
+        } else {
+            const searchUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(val);
+            wrapper.innerHTML = '<a class="route-btn" href="' + searchUrl + '" target="_blank">📍【google路線】</a>';
+        }
+    }
+
+    // 編輯電子優惠券連結網址
+    function editCouponUrl(btn) {
+        const card = btn.closest('.card');
+        const wrapper = card.querySelector('.coupon-link-wrapper');
+        const currentLink = wrapper.querySelector('a.coupon-btn');
+        const defaultVal = currentLink ? currentLink.href : '';
+
+        const inputVal = prompt("請輸入新的優惠券網址 (若欲移除請留白清空)：", defaultVal);
+        if (inputVal === null) return;
+
+        const val = inputVal.trim();
+        if (!val) {
+            wrapper.innerHTML = '';
+        } else {
+            wrapper.innerHTML = '<a class="coupon-btn" href="' + val + '" target="_blank">👉 點此開啟電子優惠券</a>';
+        }
+    }
+
+    // 編輯重要文件 / 票券圖檔連結網址
+    function editDocLinkUrl(btn) {
+        const card = btn.closest('.card');
+        const wrapper = card.querySelector('.doc-link-wrapper');
+        const currentLink = wrapper.querySelector('a.doc-link-btn');
+        const defaultVal = currentLink ? currentLink.href : '';
+
+        const inputVal = prompt("請輸入新的票券 / 圖檔連結網址 (若欲移除請留白清空)：", defaultVal);
+        if (inputVal === null) return;
+
+        const val = inputVal.trim();
+        if (!val) {
+            wrapper.innerHTML = '';
+        } else {
+            wrapper.innerHTML = '<div style="margin-top: 8px;"><a href="' + val + '" target="_blank" class="doc-link-btn">🔗 查看票券 / 圖檔連結</a></div>';
+        }
+    }
+
+    function addNewSpotToDay(btn) {
+        const wrapper = btn.previousElementSibling;
+        const newBox = document.createElement('div');
+        newBox.className = 'item-box';
+        newBox.innerHTML = `
+            <div class="spot-order-actions">
+                <button type="button" class="btn-order" onclick="moveSpotItem(this, -1)">⬆</button>
+                <button type="button" class="btn-order" onclick="moveSpotItem(this, 1)">⬇</button>
+                <button type="button" class="del-item-btn" onclick="this.closest('.item-box').remove()">✕</button>
+            </div>
+            <div class="time-spot">
+                <span class="editable-target" contenteditable="true">12:00 - 13:30</span> 
+                <a class="map-link editable-target spot-map-link" contenteditable="true" href="https://www.google.com/maps/search/?api=1&query=%E6%96%B0%E6%99%AF%E9%BB%9E" target="_blank">新增景點名稱</a>
+            </div>
+            <div class="trans-info">
+                <b>交通路線: </b><span class="editable-target" contenteditable="true">路線資訊說明</span>
+                <span class="route-link-wrapper"></span>
+                <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 設定 Google 路線</button>
+            </div>
+            <div class="note-info editable-target" contenteditable="true">備註事項說明</div>
+        `;
+        wrapper.appendChild(newBox);
+    }
+
+    function addNewDayBlock() {
+        const wrapper = document.getElementById('daysWrapper');
+        const dayCount = wrapper.querySelectorAll('.sub-menu-item').length + 1;
+        const newDay = document.createElement('details');
+        newDay.className = 'sub-menu-item';
+        newDay.innerHTML = `
+            <button type="button" class="del-day-btn" onclick="this.closest('.sub-menu-item').remove()">✕ 刪除當天</button>
+            <summary class="sub-menu-title editable-target" contenteditable="true">Day ${dayCount}｜新行程規劃</summary>
+            <div class="sub-menu-content">
+                <div class="spots-list-wrapper">
+                    <div class="item-box">
+                        <div class="spot-order-actions">
+                            <button type="button" class="btn-order" onclick="moveSpotItem(this, -1)">⬆</button>
+                            <button type="button" class="btn-order" onclick="moveSpotItem(this, 1)">⬇</button>
+                            <button type="button" class="del-item-btn" onclick="this.closest('.item-box').remove()">✕</button>
+                        </div>
+                        <div class="time-spot">
+                            <span class="editable-target" contenteditable="true">09:00</span> 
+                            <a class="map-link editable-target spot-map-link" contenteditable="true" href="https://www.google.com/maps/search/?api=1&query=%E6%96%B0%E6%99%AF%E9%BB%9E" target="_blank">新景點名稱</a>
+                        </div>
+                        <div class="trans-info">
+                            <b>交通路線: </b><span class="editable-target" contenteditable="true">交通規劃</span>
+                            <span class="route-link-wrapper"></span>
+                            <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 設定 Google 路線</button>
+                        </div>
+                        <div class="note-info editable-target" contenteditable="true">注意事項</div>
+                    </div>
+                </div>
+                <button type="button" class="inline-add-spot-btn" onclick="addNewSpotToDay(this)">+ 新增景點時段</button>
+            </div>
+        `;
+        wrapper.appendChild(newDay);
+    }
+
+    function addNewShoppingRow() {
+        const tbody = document.querySelector('#shoppingTable tbody');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><b class="editable-target" contenteditable="true">新採買項目</b></td>
+            <td class="editable-target" contenteditable="true">購買地點與提醒說明</td>
+            <td style="text-align: center;"><button type="button" class="del-row-btn" onclick="this.closest('tr').remove()">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function addNewCouponItem() {
+        const wrapper = document.getElementById('couponsWrapper');
+        const newCoupon = document.createElement('details');
+        newCoupon.className = 'sub-menu-item';
+        newCoupon.innerHTML = `
+            <button type="button" class="del-day-btn" onclick="this.closest('.sub-menu-item').remove()">✕ 刪除優惠券</button>
+            <summary class="sub-menu-title editable-target" contenteditable="true">新店家優惠券名稱</summary>
+            <div class="sub-menu-content">
+                <div class="card" style="background-color: #fffaf0; border-color: #f6ad55; margin-bottom: 0;">
+                    <span class="coupon-link-wrapper"><a class="coupon-btn" href="https://" target="_blank">👉 點此開啟電子優惠券</a></span>
+                    <button type="button" class="btn-edit-link" onclick="editCouponUrl(this)">🔗 換連結</button>
+                    <div class="editable-target" contenteditable="true" style="font-size: 13.5px; color: var(--sub-text); margin-top: 10px;">請在此點擊輸入折扣說明</div>
+                </div>
+            </div>
+        `;
+        wrapper.appendChild(newCoupon);
+    }
+
+    function addNewDocItem() {
+        const wrapper = document.getElementById('docsWrapper');
+        const newDoc = document.createElement('div');
+        newDoc.className = 'card';
+        newDoc.style.marginBottom = '10px';
+        newDoc.innerHTML = `
+            <button type="button" class="del-item-btn" onclick="this.closest('.card').remove()">✕</button>
+            <div class="editable-target" contenteditable="true" style="font-size: 15.5px; font-weight: bold; color: var(--primary);">新文件 / 票券名稱</div>
+            <div class="editable-target" contenteditable="true" style="font-size: 13.5px; color: var(--sub-text); margin-top: 4px;">備註說明</div>
+            <div class="doc-link-wrapper">
+                <div style="margin-top: 8px;">
+                    <a href="https://" target="_blank" class="doc-link-btn">
+                        🔗 查看票券 / 圖檔連結
+                    </a>
+                </div>
+            </div>
+            <button type="button" class="btn-edit-link" style="margin-top: 6px;" onclick="editDocLinkUrl(this)">🔗 換連結</button>
+        `;
+        wrapper.appendChild(newDoc);
+    }
+
+    (function() {
+        const FIREBASE_DB_URL = "https://wanghomesapporotravel2026-default-rtdb.firebaseio.com/";
+        const FIREBASE_ROOM_ID = "FukuokaKumamoto";
+        const LOCAL_BUILD_TIME = "2026-11-07T14:28:55.667Z";
+        const STORAGE_KEY = 'saved_guide_html_' + location.pathname;
+        let isEditing = false;
+
+        function getEndpoint() {
+            if (!FIREBASE_DB_URL) return null;
+            let base = FIREBASE_DB_URL.trim();
+            if (!base.endsWith('/')) base += '/';
+            return base + 'guides/' + encodeURIComponent(FIREBASE_ROOM_ID) + '.json';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            bindEvents();
+            initCloudSync();
+        });
+
+        function bindEvents() {
+            const editBtn = document.getElementById('guideEditToggleBtn');
+            if (editBtn) editBtn.addEventListener('click', toggleEdit);
+
+            const pdfBtn = document.getElementById('guidePrintPdfBtn');
+            if (pdfBtn) pdfBtn.addEventListener('click', printToPdf);
+        }
+
+        function initCloudSync() {
+            const endpoint = getEndpoint();
+            const badge = document.getElementById('syncStatusBadge');
+            const dot = document.getElementById('syncDot');
+            const text = document.getElementById('syncStatusText');
+
+            if (endpoint) {
+                badge.style.display = 'flex';
+                text.textContent = '雲端連線中...';
+                fetch(endpoint)
+                    .then(res => res.json())
+                    .then(data => {
+                        const cloudTime = data && data.updatedAt ? new Date(data.updatedAt).getTime() : 0;
+                        const localTime = new Date(LOCAL_BUILD_TIME).getTime();
+
+                        if (data && data.html && cloudTime > localTime) {
+                            document.getElementById('guideMainContent').innerHTML = data.html;
+                            text.textContent = '已同步最新雲端手冊';
+                            dot.style.background = '#48bb78';
+                        } else {
+                            text.textContent = '本地版本較新，已自動更新至雲端';
+                            dot.style.background = '#48bb78';
+                            const mainHtml = document.getElementById('guideMainContent').innerHTML;
+                            fetch(endpoint, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ html: mainHtml, updatedAt: new Date().toISOString() })
+                            }).catch(() => {});
+                        }
+                    })
+                    .catch(() => {
+                        text.textContent = '離線模式 (使用本地檔案)';
+                        dot.style.background = '#e53e3e';
+                    });
+            }
+        }
+
+        function toggleEdit() {
+            isEditing = !isEditing;
+            const currentBtn = document.getElementById('guideEditToggleBtn');
+            document.body.classList.toggle('is-editing', isEditing);
+
+            document.querySelectorAll('.editable-target').forEach(el => {
+                el.contentEditable = isEditing ? 'true' : 'false';
+            });
+
+            if (isEditing) {
+                currentBtn.textContent = '💾 儲存變更';
+            } else {
+                currentBtn.textContent = '✏️ 編輯內容';
+                const mainHtml = document.getElementById('guideMainContent').innerHTML;
+
+                try { localStorage.setItem(STORAGE_KEY, mainHtml); } catch(e) {}
+
+                const endpoint = getEndpoint();
+                if (endpoint) {
+                    const text = document.getElementById('syncStatusText');
+                    text.textContent = '正在上傳雲端...';
+                    fetch(endpoint, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ html: mainHtml, updatedAt: new Date().toISOString() })
+                    })
+                    .then(() => {
+                        text.textContent = '已即時同步至雲端！';
+                        alert('🎉 變更已儲存，所有旅伴開啟此網頁時皆會同步更新！');
+                    })
+                    .catch(() => {
+                        alert('已儲存至本機（雲端連線異常，請確認網路）！');
+                    });
+                } else {
+                    alert('🎉 變更已成功儲存在此瀏覽器！');
+                }
+            }
+        }
+
+        function printToPdf() {
+            const detailsList = document.querySelectorAll('details');
+            const originalStates = Array.from(detailsList).map(d => d.hasAttribute('open'));
+
+            detailsList.forEach(d => d.setAttribute('open', 'true'));
+            window.print();
+
+            setTimeout(() => {
+                detailsList.forEach((d, idx) => {
+                    if (!originalStates[idx]) d.removeAttribute('open');
+                });
+            }, 300);
+        }
+    })();
+    </script>
+</body>
+</html>

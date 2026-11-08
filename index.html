@@ -323,8 +323,8 @@
                 <input type="text" id="guideSubtitle" placeholder="例：東京夏日漫步 ｜ 08/15 (六) － 08/19 (三)">
             </div>
             <div class="form-group">
-                <label>首頁重點摘要 (每行一點)：</label>
-                <textarea id="guideSummary" rows="4" placeholder="例：&#10;住宿優勢：入住千禧三井花園飯店 東京，東銀座站 A1 直通。&#10;Day 1：抵達東京 ➔ 昭和喫茶店 ➔ 六本木夜景。&#10;Day 2：築地市場 ➔ 東京鐵塔 ➔ 大井賽馬場。"></textarea>
+                <label>首頁重點摘要：</label>
+                <textarea id="guideSummary" rows="4" placeholder="此欄位請自由填寫，如成員、重點行程、行前須知等"></textarea>
             </div>
         </div>
 
@@ -334,7 +334,7 @@
             <!-- 去程 -->
             <div class="row">
                 <div class="col form-group" style="flex: 1.2;">
-                    <label>去程時間：</label>
+                    <label>去程時間 (輸入日期如 2026/8/15 自動推算天數)：</label>
                     <input type="text" id="flightInTime" placeholder="例：2026/8/15(六) 06:35 > 11:15">
                 </div>
                 <div class="col form-group" style="flex: 0.8;">
@@ -842,7 +842,7 @@
             </div>
             <div class="form-group" style="margin-bottom:6px;">
                 <label style="font-size:12px; color:#718096; margin-bottom:2px;">交通路線：</label>
-                <input type="text" class="spot-trans" value="${spotData.trans || ''}" placeholder="例：搭計程車15分 / 搭JR約30分 / 步行10分見7-11左轉">
+                <input type="text" class="spot-trans" value="${spotData.trans || ''}" placeholder="例：搭計程車15分 / 搭JR第AA123車次約30分 / 步行10分見7-11左轉">
             </div>
             <div class="route-generator-box">
                 <div style="font-size: 12px; font-weight: bold; color: var(--highlight); margin-bottom: 4px;">🗺️ Google Maps 導航生成器</div>
@@ -1051,10 +1051,26 @@
 
     // 生成手冊 HTML
     function generateFinalHTML() {
-        const guideTitle = (document.getElementById('guideTitle').value || '').trim() || '旅遊手冊';
-        const guideSubtitle = (document.getElementById('guideSubtitle').value || '').trim();
-        const guideSummary = (document.getElementById('guideSummary').value || '').trim();
+        const rawTitle = (document.getElementById('guideTitle').value || '').trim();
+        const rawSubtitle = (document.getElementById('guideSubtitle').value || '').trim();
+        const rawSummary = (document.getElementById('guideSummary').value || '').trim();
         
+        const titleHtml = rawTitle 
+            ? `<h1 class="hero-title editable-target">${rawTitle}</h1>`
+            : `<h1 class="hero-title editable-target is-placeholder" data-placeholder="(大標題)">(大標題)</h1>`;
+
+        const subtitleHtml = rawSubtitle 
+            ? `<p class="hero-subtitle editable-target">${rawSubtitle}</p>`
+            : `<p class="hero-subtitle editable-target is-placeholder" data-placeholder="(副標題)">(副標題)</p>`;
+
+        let summaryBlockHtml = '';
+        if (rawSummary) {
+            const listItems = rawSummary.split('\n').filter(l => l.trim()).map(l => `<li>${l}</li>`).join('');
+            summaryBlockHtml = `<div class="summary-card"><div class="summary-title">🌟 本次行程核心摘要</div><ul class="summary-list editable-target">${listItems}</ul></div>`;
+        } else {
+            summaryBlockHtml = `<div class="summary-card"><div class="summary-title">🌟 本次行程核心摘要</div><div class="editable-target is-placeholder" style="font-size: 14.5px;" data-placeholder="(重點摘要:此欄位請自由填寫，如成員、重點行程、行前須知等 皆可)">(重點摘要:此欄位請自由填寫，如成員、重點行程、行前須知等 皆可)</div></div>`;
+        }
+
         // 班機資訊（拆分為 4 欄）
         const flightInTime = document.getElementById('flightInTime').value;
         const flightInNo = document.getElementById('flightInNo').value;
@@ -1070,7 +1086,6 @@
         const safeRoomId = JSON.stringify((document.getElementById('firebaseRoomId').value || '').trim() || "default_trip");
         
         const currentBuildTime = new Date().toISOString();
-        const summaryHtml = guideSummary ? guideSummary.split('\n').filter(l => l.trim()).map(l => `<li>${l}</li>`).join('') : '';
 
         // 飯店
         let hotelsHtml = '';
@@ -1196,14 +1211,14 @@
             </details>`;
         });
 
-        // 購物
+        // 購物（純 2 欄位：類別、建議地點與提醒）
         let shopHtml = '';
         document.querySelectorAll('#shoppingContainer .row').forEach(sr => {
             const cat = (sr.querySelector('.shop-cat').value || '').trim();
             const desc = (sr.querySelector('.shop-desc').value || '').trim();
             if (cat) {
                 const descHtml = formatValue(desc, '例：退稅指引與採購清單');
-                shopHtml += `<tr><td><b class="editable-target">${cat}</b></td><td>${descHtml}</td><td style="text-align: center;"><button type="button" class="del-row-btn" onclick="this.closest('tr').remove()">✕</button></td></tr>`;
+                shopHtml += `<tr><td><b class="editable-target">${cat}</b></td><td>${descHtml}</td></tr>`;
             }
         });
 
@@ -1284,7 +1299,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>${guideTitle}</title>
+<title>${rawTitle || '旅遊手冊'}</title>
 <style>
     :root { --primary: #1a2a3a; --accent: #c86d51; --highlight: #2b6cb0; --bg: #f7f6f3; --card-bg: #ffffff; --text: #2c2a29; --sub-text: #666059; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -1429,11 +1444,11 @@
         <div class="tokyo-hero-banner">
             <div class="hero-content">
                 <span class="hero-badge">TRAVEL GUIDE</span>
-                <h1 class="hero-title editable-target">${guideTitle}</h1>
-                <p class="hero-subtitle editable-target">${guideSubtitle}</p>
+                ${titleHtml}
+                ${subtitleHtml}
             </div>
         </div>
-        ${summaryHtml ? `<div class="summary-card"><div class="summary-title">🌟 本次行程核心摘要</div><ul class="summary-list editable-target">${summaryHtml}</ul></div>` : ''}
+        ${summaryBlockHtml}
         <details class="menu-item">
             <summary class="menu-title">✈️ 1. 班機時間</summary>
             <div class="menu-content">
@@ -1470,7 +1485,7 @@
                 <div class="card" style="margin-bottom: 0;">
                     <table class="simple-table" id="shoppingTable">
                         <thead>
-                            <tr><th>類別</th><th>建議地點與提醒</th><th style="width: 40px; text-align: center;">操作</th></tr>
+                            <tr><th>類別</th><th>建議地點與提醒</th></tr>
                         </thead>
                         <tbody>${shopHtml}</tbody>
                     </table>
@@ -1704,7 +1719,6 @@
         tr.innerHTML = \`
             <td><b class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：新採買項目)">(例：新採買項目)</b></td>
             <td><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：購買地點與提醒說明)">(例：購買地點與提醒說明)</span></td>
-            <td style="text-align: center;"><button type="button" class="del-row-btn" onclick="this.closest('tr').remove()">✕</button></td>
         \`;
         tbody.appendChild(tr);
     }

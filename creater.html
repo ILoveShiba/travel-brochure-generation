@@ -1,0 +1,1970 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>旅行手冊一鍵產生器</title>
+<style>
+    :root {
+        --primary: #1a2a3a;
+        --accent: #c86d51;
+        --highlight: #2b6cb0;
+        --bg: #f4f6f8;
+        --card: #ffffff;
+        --border: #dcd7d0;
+    }
+    * { 
+        box-sizing: border-box; 
+        -webkit-tap-highlight-color: transparent;
+    }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang TC", "Microsoft JhengHei", sans-serif;
+        background-color: var(--bg);
+        color: #2c2a29;
+        margin: 0;
+        padding: 12px;
+        line-height: 1.5;
+    }
+    .container {
+        max-width: 920px;
+        margin: 0 auto;
+        padding-bottom: 110px;
+    }
+    .header-box {
+        background: linear-gradient(135deg, #0d1b2a, #1b263b);
+        color: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .header-box h1 { margin: 0 0 4px 0; font-size: 19px; color: #f4d068; }
+    .header-box p { margin: 0; font-size: 12.5px; color: #d1d5db; }
+    
+    .storage-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        background: #e2e8f0;
+        padding: 8px 10px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+    }
+    .storage-status {
+        font-size: 11.5px;
+        color: #4a5568;
+        width: 100%;
+        margin-top: 2px;
+    }
+
+    .form-section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .section-title {
+        font-size: 15px;
+        font-weight: bold;
+        color: var(--primary);
+        border-left: 4px solid var(--accent);
+        padding-left: 8px;
+        margin-bottom: 10px;
+    }
+    .form-group {
+        margin-bottom: 10px;
+    }
+    .form-group label {
+        display: block;
+        font-size: 12.5px;
+        font-weight: bold;
+        margin-bottom: 4px;
+        color: #4a5568;
+    }
+    input[type="text"], input[type="date"], textarea {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #cbd5e0;
+        border-radius: 6px;
+        font-size: 14px;
+        -webkit-appearance: none;
+        background-color: #fff;
+        user-select: text !important;
+        -webkit-user-select: text !important;
+    }
+    input::placeholder, textarea::placeholder {
+        color: #a0aec0;
+    }
+    .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .col { flex: 1; min-width: 140px; }
+
+    .day-block {
+        border: 1.8px solid #cbd5e0;
+        background: #fbfbfa;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 12px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .day-block.dragging {
+        opacity: 0.45;
+        background-color: #edf2f7;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    }
+
+    .day-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #edf2f7;
+        border: 1px solid #cbd5e0;
+        border-radius: 6px;
+        padding: 6px 10px;
+        margin-bottom: 8px;
+    }
+    .day-drag-handle {
+        font-size: 13px;
+        color: var(--primary);
+        font-weight: bold;
+        cursor: grab;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+    .day-drag-handle:active {
+        cursor: grabbing;
+    }
+    .day-actions {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .spot-block {
+        background: #fff;
+        border: 1px solid #cbd5e0;
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 8px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .spot-block.dragging {
+        opacity: 0.45;
+        background-color: #edf2f7;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    .spot-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        padding: 4px 8px;
+        margin-bottom: 8px;
+    }
+    .drag-handle {
+        font-size: 12px;
+        color: #4a5568;
+        font-weight: bold;
+        cursor: grab;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+    .spot-actions {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .coupon-block, .doc-block, .hotel-block {
+        border: 1.5px solid #e2ded9;
+        background: #fcfbf9;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    .route-generator-box {
+        background-color: #ebf8ff;
+        border: 1px dashed #bee3f8;
+        border-radius: 6px;
+        padding: 8px;
+        margin: 6px 0;
+    }
+
+    .doc-link-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: #2b6cb0;
+        color: #ffffff !important;
+        font-weight: bold;
+        padding: 8px 14px;
+        border-radius: 6px;
+        text-decoration: none;
+        margin-top: 8px;
+        font-size: 13.5px;
+    }
+    .doc-link-btn:hover {
+        background-color: #2c5282;
+    }
+
+    .btn {
+        background-color: var(--primary);
+        color: #fff;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: bold;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        touch-action: manipulation;
+        -webkit-appearance: none;
+    }
+    .btn:active { opacity: 0.7; }
+    .btn-accent { background-color: var(--accent); }
+    .btn-secondary { background-color: #4a5568; }
+    .btn-danger { background-color: #e53e3e; padding: 4px 7px; font-size: 11.5px; }
+    .btn-move { background-color: #4a5568; padding: 3px 7px; font-size: 11px; }
+    .btn-add { background-color: #3182ce; font-size: 12.5px; margin-top: 4px; }
+    .btn-map { background-color: #38a169; font-size: 12px; padding: 6px 10px; }
+    
+    .action-bar {
+        display: flex;
+        gap: 6px;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 999;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(10px);
+        padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+        border-top: 1px solid #e2ded9;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+    }
+    .btn-large {
+        flex: 1;
+        padding: 11px 6px;
+        font-size: 13.5px;
+    }
+    #preview-frame {
+        width: 100%;
+        height: 520px;
+        border: 2px solid var(--primary);
+        border-radius: 10px;
+        margin-top: 12px;
+        display: none;
+        background: #fff;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-box">
+        <h1>✈️ 旅行手冊一鍵產生器</h1>
+        <p>填寫行程後，一鍵即時預覽、下載完整 HTML 或列印/儲存為全展開 PDF！</p>
+    </div>
+
+    <!-- 暫存與備份控制列 -->
+    <div class="storage-bar">
+        <button type="button" class="btn btn-secondary" id="btnExport">📥 資料備份</button>
+        <button type="button" class="btn btn-secondary" id="btnImport">📤 資料匯入</button>
+        <input type="file" id="importFile" accept=".json" style="display:none;">
+        <button type="button" class="btn btn-danger" id="btnClear">🗑️ 清空資料</button>
+        <span class="storage-status" id="saveStatus">💾 已啟動自動暫存</span>
+    </div>
+
+    <form id="guideForm" onsubmit="return false;">
+        <!-- 雲端多人同步設定 -->
+        <div class="form-section" style="border: 2px solid #3182ce; background: #ebf8ff;">
+            <div class="section-title" style="color: #2b6cb0; border-color: #3182ce;">🌐 雲端多人同步設定 (Firebase 即時資料庫)</div>
+            <div class="form-group">
+                <label>Firebase Realtime Database 網址 (非必填，填寫後支援多人連線同步)：</label>
+                <input type="text" id="firebaseDbUrl" placeholder="例：https://your-trip-db-default-rtdb.firebaseio.com/">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>行程共編房間名稱 (英文代碼，供旅伴共用同一本行程)：</label>
+                <input type="text" id="firebaseRoomId" placeholder="例：hokkaido-2026-family">
+            </div>
+        </div>
+
+        <!-- 0. 旅遊手冊命名與基本資訊 -->
+        <div class="form-section">
+            <div class="section-title">🌟 0. 旅遊手冊命名與副標題</div>
+            <div class="form-group">
+                <label>手冊大標題：</label>
+                <input type="text" id="guideTitle" placeholder="例：東京 5 Days 口袋隨身手冊">
+            </div>
+            <div class="form-group">
+                <label>手冊副標題：</label>
+                <input type="text" id="guideSubtitle" placeholder="例：東京夏日漫步 ｜ 08/15 (六) － 08/19 (三)">
+            </div>
+            <div class="form-group">
+                <label>首頁重點摘要：</label>
+                <textarea id="guideSummary" rows="4" placeholder="此欄位請自由填寫，如成員、重點行程、行前須知等"></textarea>
+            </div>
+        </div>
+
+        <!-- 1. 航班資訊 -->
+        <div class="form-section">
+            <div class="section-title">✈️ 1. 航班時間資訊</div>
+            <!-- 去程 -->
+            <div class="row">
+                <div class="col form-group" style="flex: 1.2;">
+                    <label>去程時間 ：</label>
+                    <input type="text" id="flightInTime" placeholder="例：2026/8/15(六) 06:35 > 11:15">
+                </div>
+                <div class="col form-group" style="flex: 0.8;">
+                    <label>班機代號：</label>
+                    <input type="text" id="flightInNo" placeholder="例：BR198">
+                </div>
+                <div class="col form-group">
+                    <label>出發機場：</label>
+                    <input type="text" id="flightInDep" placeholder="例：桃園機場 T2">
+                </div>
+                <div class="col form-group">
+                    <label>抵達機場：</label>
+                    <input type="text" id="flightInArr" placeholder="例：成田機場 T1">
+                </div>
+            </div>
+            <!-- 回程 -->
+            <div class="row">
+                <div class="col form-group" style="flex: 1.2;">
+                    <label>回程時間：</label>
+                    <input type="text" id="flightOutTime" placeholder="例：2026/8/19(三) 14:00 > 16:55">
+                </div>
+                <div class="col form-group" style="flex: 0.8;">
+                    <label>班機代號：</label>
+                    <input type="text" id="flightOutNo" placeholder="例：BR197">
+                </div>
+                <div class="col form-group">
+                    <label>出發機場：</label>
+                    <input type="text" id="flightOutDep" placeholder="例：成田機場 T1">
+                </div>
+                <div class="col form-group">
+                    <label>抵達機場：</label>
+                    <input type="text" id="flightOutArr" placeholder="例：桃園機場 T2">
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 飯店資訊 -->
+        <div class="form-section">
+            <div class="section-title">🏨 2. 飯店資訊</div>
+            <div id="hotelsContainer"></div>
+            <button type="button" class="btn btn-accent" id="btnAddHotel">+ 新增飯店</button>
+        </div>
+
+        <!-- 3. 行程與交通 -->
+        <div class="form-section">
+            <div class="section-title">🗓️ 3. 每日行程與景點規劃</div>
+            <div id="daysContainer"></div>
+            <button type="button" class="btn btn-accent" id="btnAddDay">+ 新增天數</button>
+        </div>
+
+        <!-- 4. 購物清單 -->
+        <div class="form-section">
+            <div class="section-title">🛍️ 4. 購物採買清單</div>
+            <div id="shoppingContainer"></div>
+            <button type="button" class="btn btn-add" id="btnAddShopping">+ 新增購物項目</button>
+        </div>
+
+        <!-- 5. 專屬電子優惠券 -->
+        <div class="form-section">
+            <div class="section-title">🎁 5. 電子優惠券設定</div>
+            <div id="couponsContainer"></div>
+            <button type="button" class="btn btn-add" id="btnAddCoupon">+ 新增電子優惠券</button>
+        </div>
+
+        <!-- 6. 電子票券與重要文件 (純超連結) -->
+        <div class="form-section">
+            <div class="section-title">📎 6. 電子票券與重要文件 (超連結)</div>
+            <div style="font-size: 12.5px; color: #718096; margin-bottom: 8px;">
+                填寫車票 QR Code、登機憑證或 PDF 的線上網址，在手冊中以乾淨的超連結按鈕呈現，點擊直接另開。
+            </div>
+            <div id="docsContainer"></div>
+            <button type="button" class="btn btn-add" id="btnAddDoc">+ 新增重要文件 / 票券</button>
+        </div>
+    </form>
+
+    <iframe id="preview-frame"></iframe>
+</div>
+
+<!-- 底部固定操作按鈕 -->
+<div class="action-bar">
+    <button type="button" class="btn btn-accent btn-large" id="btnPreview">👁️ 即時預覽</button>
+    <button type="button" class="btn btn-secondary btn-large" id="btnPrintPdf">📄 下載 PDF</button>
+    <button type="button" class="btn btn-large" id="btnDownload">💾 下載網頁</button>
+</div>
+
+<script>
+(function() {
+    let draggedDay = null;
+    let draggedSpot = null;
+
+    const blankData = {
+        firebaseDbUrl: "", firebaseRoomId: "",
+        guideTitle: "", guideSubtitle: "", guideSummary: "",
+        flightInTime: "", flightInNo: "", flightInDep: "", flightInArr: "",
+        flightOutTime: "", flightOutNo: "", flightOutDep: "", flightOutArr: "",
+        hotels: [{ checkIn: "", checkOut: "", name: "", engName: "", address: "", trans: "" }],
+        days: [{ title: "", spots: [{ time: "", spot: "", trans: "", routeUrl: "", note: "" }] }],
+        shopping: [{ cat: "", desc: "" }],
+        coupons: [],
+        docs: [{ title: "", note: "", linkUrl: "" }]
+    };
+
+    function safeGetStorage(key) {
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+    function safeSetStorage(key, val) {
+        try { localStorage.setItem(key, val); return true; } catch (e) { return false; }
+    }
+
+    function parseStartDate() {
+        const val = document.getElementById('flightInTime').value;
+        if (!val) return null;
+        const match = val.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+        if (match) {
+            return new Date(parseInt(match[1], 10), parseInt(match[2], 10) - 1, parseInt(match[3], 10));
+        }
+        return null;
+    }
+
+    function generateDayPrefix(dayIndex) {
+        const startDate = parseStartDate();
+        const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+        if (startDate && !isNaN(startDate.getTime())) {
+            const current = new Date(startDate);
+            current.setDate(startDate.getDate() + (dayIndex - 1));
+            const mm = String(current.getMonth() + 1).padStart(2, '0');
+            const dd = String(current.getDate()).padStart(2, '0');
+            const w = weekdays[current.getDay()];
+            return `Day ${dayIndex} (${mm}/${dd} ${w})｜`;
+        }
+        return `Day ${dayIndex}｜`;
+    }
+
+    function refreshAllDayTitles() {
+        const dayBlocks = document.querySelectorAll('.day-block');
+        dayBlocks.forEach((block, idx) => {
+            const dayNum = idx + 1;
+            block.querySelector('.day-num-label').textContent = `第 ${dayNum} 天`;
+            const titleInput = block.querySelector('.day-title-input');
+            const currentVal = titleInput.value.trim();
+
+            let customText = '';
+            if (currentVal.includes('｜')) {
+                customText = currentVal.split('｜')[1];
+            } else if (!currentVal.startsWith('Day ')) {
+                customText = currentVal;
+            }
+
+            titleInput.value = generateDayPrefix(dayNum) + customText;
+        });
+        autoSave();
+    }
+
+    function init() {
+        const local = safeGetStorage('tokyo_guide_app_data');
+        if (local) {
+            try { 
+                loadFormData(JSON.parse(local)); 
+            } catch (e) { 
+                loadFormData(blankData); 
+            }
+        } else {
+            loadFormData(blankData);
+        }
+
+        document.getElementById('flightInTime').addEventListener('input', () => {
+            if (parseStartDate()) refreshAllDayTitles();
+        });
+        document.getElementById('flightInTime').addEventListener('change', refreshAllDayTitles);
+
+        document.getElementById('guideForm').addEventListener('input', autoSave);
+        document.getElementById('guideForm').addEventListener('change', autoSave);
+
+        document.getElementById('btnExport').addEventListener('click', exportJSON);
+        document.getElementById('btnImport').addEventListener('click', () => document.getElementById('importFile').click());
+        document.getElementById('importFile').addEventListener('change', importJSON);
+        document.getElementById('btnClear').addEventListener('click', clearStorage);
+
+        document.getElementById('btnAddHotel').addEventListener('click', () => addHotel());
+        document.getElementById('btnAddDay').addEventListener('click', () => addDay());
+        document.getElementById('btnAddShopping').addEventListener('click', () => addShoppingRow());
+        document.getElementById('btnAddCoupon').addEventListener('click', () => addCoupon());
+        document.getElementById('btnAddDoc').addEventListener('click', () => addDoc());
+
+        document.getElementById('btnPreview').addEventListener('click', previewGuide);
+        document.getElementById('btnPrintPdf').addEventListener('click', exportPdfDirectly);
+        document.getElementById('btnDownload').addEventListener('click', downloadGuide);
+
+        const daysContainer = document.getElementById('daysContainer');
+        daysContainer.addEventListener('dragover', (e) => {
+            if (!draggedDay) return;
+            e.preventDefault();
+            const afterElement = getDragAfterElement(daysContainer, e.clientY, '.day-block:not(.dragging)');
+            if (afterElement == null) {
+                daysContainer.appendChild(draggedDay);
+            } else {
+                daysContainer.insertBefore(draggedDay, afterElement);
+            }
+        });
+    }
+
+    function autoSave() {
+        const data = collectFormData();
+        const success = safeSetStorage('tokyo_guide_app_data', JSON.stringify(data));
+        const statusEl = document.getElementById('saveStatus');
+        if (statusEl) {
+            statusEl.textContent = success ? '💾 已自動同步至暫存 (' + new Date().toLocaleTimeString() + ')' : '⚠️ 暫存空間已滿 (不影響產出手冊)';
+        }
+    }
+
+    function collectFormData() {
+        const data = {
+            firebaseDbUrl: (document.getElementById('firebaseDbUrl').value || '').trim(),
+            firebaseRoomId: (document.getElementById('firebaseRoomId').value || '').trim(),
+            guideTitle: document.getElementById('guideTitle').value || '',
+            guideSubtitle: document.getElementById('guideSubtitle').value || '',
+            guideSummary: document.getElementById('guideSummary').value || '',
+            flightInTime: document.getElementById('flightInTime').value || '',
+            flightInNo: document.getElementById('flightInNo').value || '',
+            flightInDep: document.getElementById('flightInDep').value || '',
+            flightInArr: document.getElementById('flightInArr').value || '',
+            flightOutTime: document.getElementById('flightOutTime').value || '',
+            flightOutNo: document.getElementById('flightOutNo').value || '',
+            flightOutDep: document.getElementById('flightOutDep').value || '',
+            flightOutArr: document.getElementById('flightOutArr').value || '',
+            hotels: [], days: [], shopping: [], coupons: [], docs: []
+        };
+
+        document.querySelectorAll('#hotelsContainer .hotel-block').forEach(hb => {
+            data.hotels.push({
+                checkIn: hb.querySelector('.hotel-checkin').value || '',
+                checkOut: hb.querySelector('.hotel-checkout').value || '',
+                name: hb.querySelector('.hotel-name').value || '',
+                engName: hb.querySelector('.hotel-engname').value || '',
+                address: hb.querySelector('.hotel-address').value || '',
+                trans: hb.querySelector('.hotel-trans').value || ''
+            });
+        });
+
+        document.querySelectorAll('.day-block').forEach(db => {
+            const dayObj = { title: db.querySelector('.day-title-input').value || '', spots: [] };
+            db.querySelectorAll('.spot-block').forEach(sb => {
+                dayObj.spots.push({
+                    time: sb.querySelector('.spot-time').value || '',
+                    spot: sb.querySelector('.spot-name').value || '',
+                    trans: sb.querySelector('.spot-trans').value || '',
+                    routeUrl: sb.querySelector('.spot-route-url').value || '',
+                    note: sb.querySelector('.spot-note').value || ''
+                });
+            });
+            data.days.push(dayObj);
+        });
+
+        document.querySelectorAll('#shoppingContainer .row').forEach(sr => {
+            data.shopping.push({
+                cat: sr.querySelector('.shop-cat').value || '',
+                desc: sr.querySelector('.shop-desc').value || ''
+            });
+        });
+
+        document.querySelectorAll('#couponsContainer .coupon-block').forEach(cb => {
+            data.coupons.push({
+                title: cb.querySelector('.coupon-title-input').value || '',
+                url: cb.querySelector('.coupon-url-input').value || '',
+                desc: cb.querySelector('.coupon-desc-input').value || ''
+            });
+        });
+
+        document.querySelectorAll('#docsContainer .doc-block').forEach(docEl => {
+            const title = (docEl.querySelector('.doc-title-input')?.value || '').trim();
+            const note = (docEl.querySelector('.doc-note-input')?.value || '').trim();
+            const linkUrl = (docEl.querySelector('.doc-url-input')?.value || '').trim();
+            if (title || note || linkUrl) {
+                data.docs.push({ title, note, linkUrl });
+            }
+        });
+
+        return data;
+    }
+
+    function loadFormData(data) {
+        document.getElementById('firebaseDbUrl').value = data.firebaseDbUrl || '';
+        document.getElementById('firebaseRoomId').value = data.firebaseRoomId || '';
+        document.getElementById('guideTitle').value = data.guideTitle || '';
+        document.getElementById('guideSubtitle').value = data.guideSubtitle || '';
+        document.getElementById('guideSummary').value = data.guideSummary || '';
+        document.getElementById('flightInTime').value = data.flightInTime || '';
+        document.getElementById('flightInNo').value = data.flightInNo || '';
+        document.getElementById('flightInDep').value = data.flightInDep || '';
+        document.getElementById('flightInArr').value = data.flightInArr || '';
+        document.getElementById('flightOutTime').value = data.flightOutTime || '';
+        document.getElementById('flightOutNo').value = data.flightOutNo || '';
+        document.getElementById('flightOutDep').value = data.flightOutDep || '';
+        document.getElementById('flightOutArr').value = data.flightOutArr || '';
+
+        const hotelsContainer = document.getElementById('hotelsContainer');
+        hotelsContainer.innerHTML = '';
+        if (data.hotels && data.hotels.length > 0) {
+            data.hotels.forEach(h => renderHotelBlock(h));
+        } else {
+            renderHotelBlock({});
+        }
+
+        const daysContainer = document.getElementById('daysContainer');
+        daysContainer.innerHTML = '';
+        if (data.days && data.days.length > 0) {
+            data.days.forEach((day, index) => renderDayBlock(day, index + 1));
+        } else {
+            renderDayBlock({ title: '', spots: [{}] }, 1);
+        }
+
+        const shoppingContainer = document.getElementById('shoppingContainer');
+        shoppingContainer.innerHTML = '';
+        if (data.shopping && data.shopping.length > 0) {
+            data.shopping.forEach(item => renderShoppingRow(item.cat, item.desc));
+        } else {
+            renderShoppingRow('', '');
+        }
+
+        const couponsContainer = document.getElementById('couponsContainer');
+        couponsContainer.innerHTML = '';
+        if (data.coupons && data.coupons.length > 0) {
+            data.coupons.forEach(coupon => renderCouponBlock(coupon));
+        }
+
+        const docsContainer = document.getElementById('docsContainer');
+        docsContainer.innerHTML = '';
+        if (data.docs && data.docs.length > 0) {
+            data.docs.forEach(doc => {
+                const targetUrl = doc.linkUrl || doc.imageUrl || doc.fileData || '';
+                renderDocBlock({
+                    title: doc.title || '',
+                    note: doc.note || '',
+                    linkUrl: targetUrl
+                });
+            });
+        } else {
+            renderDocBlock({ title: '', note: '', linkUrl: '' });
+        }
+
+        refreshAllDayTitles();
+    }
+
+    function renderHotelBlock(hData = {}) {
+        const container = document.getElementById('hotelsContainer');
+        const hDiv = document.createElement('div');
+        hDiv.className = 'hotel-block';
+        hDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-weight: bold; color: var(--accent); font-size: 13.5px;">🏨 住宿飯店設定</span>
+                <button type="button" class="btn btn-danger btn-del-hotel">刪除此飯店</button>
+            </div>
+            <div class="row" style="margin-bottom: 8px;">
+                <div class="col form-group" style="margin-bottom:0;">
+                    <label>入住日期 (點選日曆)：</label>
+                    <input type="date" class="hotel-checkin" value="${hData.checkIn || ''}">
+                </div>
+                <div class="col form-group" style="margin-bottom:0;">
+                    <label>退房日期 (點選日曆)：</label>
+                    <input type="date" class="hotel-checkout" value="${hData.checkOut || ''}">
+                </div>
+            </div>
+            <div class="row" style="margin-bottom: 8px;">
+                <div class="col form-group" style="margin-bottom:0;">
+                    <label>飯店中文名稱：<span style="font-size:11px; color:#718096; font-weight:normal;">（輸入的資訊會自動產生 Google 地圖連結）</span></label>
+                    <input type="text" class="hotel-name" placeholder="例：千禧三井花園飯店 東京" value="${hData.name || ''}">
+                </div>
+                <div class="col form-group" style="margin-bottom:0;">
+                    <label>飯店英文名稱：</label>
+                    <input type="text" class="hotel-engname" placeholder="例：Millennium Mitsui Garden Hotel Tokyo" value="${hData.engName || ''}">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>飯店地址：<span style="font-size:11px; color:#718096; font-weight:normal;">（輸入的資訊會自動產生 Google 地圖連結）</span></label>
+                <input type="text" class="hotel-address" placeholder="例：東京都中央區銀座 5-11-1" value="${hData.address || ''}">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>交通引導說明：</label>
+                <input type="text" class="hotel-trans" placeholder="例：都營淺草線 / 日比谷線「東銀座站」A1 出口地下連通道直通。" value="${hData.trans || ''}">
+            </div>
+        `;
+        container.appendChild(hDiv);
+        hDiv.querySelector('.btn-del-hotel').addEventListener('click', () => { hDiv.remove(); autoSave(); });
+    }
+
+    function addHotel() {
+        renderHotelBlock({});
+        autoSave();
+    }
+
+    function renderDayBlock(dayData, dayNum) {
+        const container = document.getElementById('daysContainer');
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'day-block';
+
+        const initialTitle = dayData.title ? dayData.title : generateDayPrefix(dayNum);
+
+        dayDiv.innerHTML = `
+            <div class="day-header">
+                <span class="day-drag-handle">☰ 拖曳整天排序 (<span class="day-num-label">第 ${dayNum} 天</span>)</span>
+                <div class="day-actions">
+                    <button type="button" class="btn btn-move btn-day-up" title="上移整天">⬆</button>
+                    <button type="button" class="btn btn-move btn-day-down" title="下移整天">⬇</button>
+                    <button type="button" class="btn btn-danger btn-del-day">刪除此天</button>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 8px;">
+                <label style="font-size:12px; color:#4a5568;">天數標題 (系統自動推算，亦可直接修改)：</label>
+                <input type="text" class="day-title-input" placeholder="例：Day ${dayNum} (08/15 六)｜抵達東京．景點名稱" value="${initialTitle}">
+            </div>
+            <div class="spots-container"></div>
+            <button type="button" class="btn btn-add btn-add-spot">+ 新增景點時段</button>
+        `;
+        container.appendChild(dayDiv);
+
+        const handle = dayDiv.querySelector('.day-drag-handle');
+        handle.addEventListener('mousedown', () => { dayDiv.draggable = true; });
+        handle.addEventListener('mouseup', () => { dayDiv.draggable = false; });
+        handle.addEventListener('mouseleave', () => { dayDiv.draggable = false; });
+
+        dayDiv.addEventListener('dragstart', (e) => {
+            if (draggedSpot) { e.preventDefault(); return; }
+            draggedDay = dayDiv;
+            setTimeout(() => dayDiv.classList.add('dragging'), 0);
+        });
+        dayDiv.addEventListener('dragend', () => {
+            dayDiv.draggable = false;
+            dayDiv.classList.remove('dragging');
+            draggedDay = null;
+            refreshAllDayTitles();
+        });
+
+        dayDiv.querySelector('.btn-day-up').addEventListener('click', () => {
+            const prev = dayDiv.previousElementSibling;
+            if (prev) { container.insertBefore(dayDiv, prev); refreshAllDayTitles(); }
+        });
+        dayDiv.querySelector('.btn-day-down').addEventListener('click', () => {
+            const next = dayDiv.nextElementSibling;
+            if (next) { container.insertBefore(next, dayDiv); refreshAllDayTitles(); }
+        });
+        dayDiv.querySelector('.btn-del-day').addEventListener('click', () => { 
+            dayDiv.remove(); 
+            refreshAllDayTitles(); 
+        });
+        dayDiv.querySelector('.btn-add-spot').addEventListener('click', () => {
+            renderSpotBlock(dayDiv.querySelector('.spots-container'), {});
+            autoSave();
+        });
+
+        const spotsContainer = dayDiv.querySelector('.spots-container');
+        spotsContainer.addEventListener('dragover', (e) => {
+            if (!draggedSpot) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const afterElement = getDragAfterElement(spotsContainer, e.clientY, '.spot-block:not(.dragging)');
+            if (afterElement == null) {
+                spotsContainer.appendChild(draggedSpot);
+            } else {
+                spotsContainer.insertBefore(draggedSpot, afterElement);
+            }
+        });
+
+        if (dayData.spots && dayData.spots.length > 0) {
+            dayData.spots.forEach(spot => renderSpotBlock(spotsContainer, spot));
+        } else {
+            renderSpotBlock(spotsContainer, {});
+        }
+    }
+
+    function getDragAfterElement(container, y, selector) {
+        const draggableElements = [...container.querySelectorAll(selector)];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function renderSpotBlock(container, spotData = {}) {
+        const spotDiv = document.createElement('div');
+        spotDiv.className = 'spot-block';
+
+        spotDiv.innerHTML = `
+            <div class="spot-header">
+                <span class="drag-handle">☰ 拖曳排序</span>
+                <div class="spot-actions">
+                    <button type="button" class="btn btn-move btn-move-up" title="上移">⬆</button>
+                    <button type="button" class="btn btn-move btn-move-down" title="下移">⬇️</button>
+                    <button type="button" class="btn btn-danger btn-del-spot">✕ 刪除</button>
+                </div>
+            </div>
+            <div class="row" style="margin-bottom:6px;">
+                <div class="col form-group" style="flex: 0.35; margin-bottom:0;">
+                    <label style="font-size:12px; color:#718096; margin-bottom:2px;">時間：</label>
+                    <input type="text" class="spot-time" value="${spotData.time || ''}" placeholder="例：14:00 - 16:00">
+                </div>
+                <div class="col form-group" style="flex: 0.65; margin-bottom:0;">
+                    <label style="font-size:12px; color:#718096; margin-bottom:2px;">景點名稱 (自動轉地圖)：</label>
+                    <input type="text" class="spot-name" value="${spotData.spot || ''}" placeholder="例：Hekkelun (ヘッケルン)">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:6px;">
+                <label style="font-size:12px; color:#718096; margin-bottom:2px;">交通路線：</label>
+                <input type="text" class="spot-trans" value="${spotData.trans || ''}" placeholder="例：搭計程車15分 / 搭JR第AA123車次約30分 / 步行10分見7-11左轉">
+            </div>
+            <div class="route-generator-box">
+                <div style="font-size: 12px; font-weight: bold; color: var(--highlight); margin-bottom: 4px;">🗺️ Google Maps 導航生成器</div>
+                <div class="row" style="gap: 6px;">
+                    <input type="text" class="map-start" placeholder="起點 (例：東銀座站)" style="font-size:13px; padding:6px 8px;">
+                    <input type="text" class="map-end" placeholder="終點 (例：Hekkelun)" style="font-size:13px; padding:6px 8px;">
+                    <button type="button" class="btn btn-map btn-build-map">⚡ 生成</button>
+                </div>
+                <input type="text" class="spot-route-url" value="${spotData.routeUrl || ''}" placeholder="生成的 Google 導航網址" style="margin-top: 6px; font-size: 13px;">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:12px; color:#718096; margin-bottom:2px;">注意事項 / 備註：</label>
+                <input type="text" class="spot-note" value="${spotData.note || ''}" placeholder="例：品嚐老老闆特大焦糖布丁。">
+            </div>
+        `;
+        container.appendChild(spotDiv);
+
+        const spotHandle = spotDiv.querySelector('.drag-handle');
+        spotHandle.addEventListener('mousedown', () => { spotDiv.draggable = true; });
+        spotHandle.addEventListener('mouseup', () => { spotDiv.draggable = false; });
+        spotHandle.addEventListener('mouseleave', () => { spotDiv.draggable = false; });
+
+        spotDiv.addEventListener('dragstart', (e) => {
+            e.stopPropagation();
+            draggedSpot = spotDiv;
+            setTimeout(() => spotDiv.classList.add('dragging'), 0);
+        });
+        spotDiv.addEventListener('dragend', () => {
+            e.stopPropagation();
+            spotDiv.draggable = false;
+            spotDiv.classList.remove('dragging');
+            draggedSpot = null;
+            autoSave();
+        });
+
+        spotDiv.querySelector('.btn-move-up').addEventListener('click', () => {
+            const prev = spotDiv.previousElementSibling;
+            if (prev) { container.insertBefore(spotDiv, prev); autoSave(); }
+        });
+        spotDiv.querySelector('.btn-move-down').addEventListener('click', () => {
+            const next = spotDiv.nextElementSibling;
+            if (next) { container.insertBefore(next, spotDiv); autoSave(); }
+        });
+        spotDiv.querySelector('.btn-del-spot').addEventListener('click', () => { 
+            spotDiv.remove(); autoSave(); 
+        });
+
+        spotDiv.querySelector('.btn-build-map').addEventListener('click', () => {
+            const start = spotDiv.querySelector('.map-start').value.trim();
+            const end = spotDiv.querySelector('.map-end').value.trim();
+            const urlInput = spotDiv.querySelector('.spot-route-url');
+            if (start && end) {
+                urlInput.value = `https://www.google.com/maps/dir/${encodeURIComponent(start)}/${encodeURIComponent(end)}`;
+            } else if (end) {
+                urlInput.value = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(end)}`;
+            } else {
+                alert('請至少填寫「終點」名稱！');
+                return;
+            }
+            autoSave();
+        });
+    }
+
+    function addDay() {
+        const count = document.querySelectorAll('.day-block').length + 1;
+        renderDayBlock({ title: generateDayPrefix(count), spots: [{}] }, count);
+        autoSave();
+    }
+
+    function renderShoppingRow(cat = '', desc = '') {
+        const container = document.getElementById('shoppingContainer');
+        const row = document.createElement('div');
+        row.className = 'row form-group';
+        row.innerHTML = `
+            <input type="text" class="col shop-cat" value="${cat}" placeholder="類別 (例：1. 無印良品)" style="flex: 0.35;">
+            <input type="text" class="col shop-desc" value="${desc}" placeholder="購買地點與退稅提醒" style="flex: 0.60;">
+            <button type="button" class="btn btn-danger btn-del-shop" style="flex: 0.05;">✕</button>
+        `;
+        container.appendChild(row);
+        row.querySelector('.btn-del-shop').addEventListener('click', () => { row.remove(); autoSave(); });
+    }
+
+    function addShoppingRow() {
+        renderShoppingRow('', '');
+        autoSave();
+    }
+
+    function renderCouponBlock(couponData = {}) {
+        const container = document.getElementById('couponsContainer');
+        const couponDiv = document.createElement('div');
+        couponDiv.className = 'coupon-block';
+        couponDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-weight: bold; color: var(--accent); font-size: 14px;">🎁 電子優惠券項目</span>
+                <button type="button" class="btn btn-danger btn-del-coupon">刪除此優惠券</button>
+            </div>
+            <div class="form-group">
+                <label>優惠券名稱：</label>
+                <input type="text" class="coupon-title-input" placeholder="例：🐧 唐吉訶德免稅電子優惠券" value="${couponData.title || ''}">
+            </div>
+            <div class="form-group">
+                <label>優惠券連結網址：</label>
+                <input type="text" class="coupon-url-input" placeholder="例：https://japanportal.donki-global.com/coupon/..." value="${couponData.url || ''}">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>折扣條件與說明：</label>
+                <textarea class="coupon-desc-input" rows="3" placeholder="例：&#10;• 滿 10,000 日圓以上：享 10% 免稅 + 5% OFF 折扣">${couponData.desc || ''}</textarea>
+            </div>
+        `;
+        container.appendChild(couponDiv);
+        couponDiv.querySelector('.btn-del-coupon').addEventListener('click', () => { couponDiv.remove(); autoSave(); });
+    }
+
+    function addCoupon() {
+        renderCouponBlock({ title: '', url: '', desc: '' });
+        autoSave();
+    }
+
+    function renderDocBlock(docData = {}) {
+        const container = document.getElementById('docsContainer');
+        const docDiv = document.createElement('div');
+        docDiv.className = 'doc-block';
+
+        const safeUrl = docData.linkUrl || docData.imageUrl || docData.fileData || '';
+
+        docDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-weight: bold; color: #2b6cb0; font-size: 14px;">📎 票券 / 文件項目</span>
+                <button type="button" class="btn btn-danger btn-del-doc">刪除此文件</button>
+            </div>
+            <div class="form-group">
+                <label>文件名稱：</label>
+                <input type="text" class="doc-title-input" placeholder="例：JR 列車 QRCODE" value="${docData.title || ''}">
+            </div>
+            <div class="form-group">
+                <label>備註說明：</label>
+                <input type="text" class="doc-note-input" placeholder="例：回程交通：從札幌到新千歲機場坐 JR 列車" value="${docData.note || ''}">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>圖檔 / 票券連結網址：</label>
+                <input type="text" class="doc-url-input" placeholder="例：https://example.com/ticket.jpg 或 Google Drive 連結" value="${safeUrl}">
+            </div>
+        `;
+        container.appendChild(docDiv);
+
+        docDiv.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', autoSave);
+            input.addEventListener('change', autoSave);
+        });
+
+        docDiv.querySelector('.btn-del-doc').addEventListener('click', () => { 
+            docDiv.remove(); 
+            autoSave(); 
+        });
+    }
+
+    function addDoc() {
+        renderDocBlock({ title: '', note: '', linkUrl: '' });
+        autoSave();
+    }
+
+    function exportJSON() {
+        const data = collectFormData();
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const fileName = `travel_guide_${new Date().toISOString().slice(0,10)}.json`;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+    }
+
+    function importJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                loadFormData(data);
+                autoSave();
+                alert('🎉 行程資料匯入成功！');
+            } catch (err) {
+                alert('JSON 格式錯誤，請確認檔案！');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function clearStorage() {
+        if (confirm('確定要清空所有已填寫的資料嗎？')) {
+            safeSetStorage('tokyo_guide_app_data', '');
+            loadFormData(blankData);
+            document.getElementById('saveStatus').textContent = '💾 資料已清空';
+        }
+    }
+
+    // 輔助函式：包裝方案 C 範例 Placeholder 元素
+    function formatValue(val, placeholderText, extraClass = '') {
+        const cleanVal = (val || '').trim();
+        if (cleanVal) {
+            return `<span class="editable-target ${extraClass}">${cleanVal}</span>`;
+        }
+        return `<span class="editable-target is-placeholder ${extraClass}" data-placeholder="(${placeholderText})">(${placeholderText})</span>`;
+    }
+
+    // 生成手冊 HTML
+    function generateFinalHTML() {
+        const rawTitle = (document.getElementById('guideTitle').value || '').trim();
+        const rawSubtitle = (document.getElementById('guideSubtitle').value || '').trim();
+        const rawSummary = (document.getElementById('guideSummary').value || '').trim();
+        
+        const titleHtml = rawTitle 
+            ? `<h1 class="hero-title editable-target">${rawTitle}</h1>`
+            : `<h1 class="hero-title editable-target is-placeholder" data-placeholder="(大標題)">(大標題)</h1>`;
+
+        const subtitleHtml = rawSubtitle 
+            ? `<p class="hero-subtitle editable-target">${rawSubtitle}</p>`
+            : `<p class="hero-subtitle editable-target is-placeholder" data-placeholder="(副標題)">(副標題)</p>`;
+
+        let summaryBlockHtml = '';
+        if (rawSummary) {
+            const listItems = rawSummary.split('\n').filter(l => l.trim()).map(l => `<li>${l}</li>`).join('');
+            summaryBlockHtml = `<div class="summary-card"><div class="summary-title">🌟 本次行程核心摘要</div><ul class="summary-list editable-target">${listItems}</ul></div>`;
+        } else {
+            summaryBlockHtml = `<div class="summary-card"><div class="summary-title">🌟 本次行程核心摘要</div><div class="editable-target is-placeholder" style="font-size: 14.5px;" data-placeholder="(重點摘要:此欄位請自由填寫，如成員、重點行程、行前須知等 皆可)">(重點摘要:此欄位請自由填寫，如成員、重點行程、行前須知等 皆可)</div></div>`;
+        }
+
+        // 班機資訊（拆分為 4 欄）
+        const flightInTime = document.getElementById('flightInTime').value;
+        const flightInNo = document.getElementById('flightInNo').value;
+        const flightInDep = document.getElementById('flightInDep').value;
+        const flightInArr = document.getElementById('flightInArr').value;
+        
+        const flightOutTime = document.getElementById('flightOutTime').value;
+        const flightOutNo = document.getElementById('flightOutNo').value;
+        const flightOutDep = document.getElementById('flightOutDep').value;
+        const flightOutArr = document.getElementById('flightOutArr').value;
+
+        const safeDbUrl = JSON.stringify((document.getElementById('firebaseDbUrl').value || '').trim());
+        const safeRoomId = JSON.stringify((document.getElementById('firebaseRoomId').value || '').trim() || "default_trip");
+        
+        const currentBuildTime = new Date().toISOString();
+
+        // 飯店
+        let hotelsHtml = '';
+        const hotelBlocks = document.querySelectorAll('#hotelsContainer .hotel-block');
+        hotelBlocks.forEach((hb, idx) => {
+            const checkIn = (hb.querySelector('.hotel-checkin').value || '').trim();
+            const checkOut = (hb.querySelector('.hotel-checkout').value || '').trim();
+            const name = (hb.querySelector('.hotel-name').value || '').trim();
+            const engName = (hb.querySelector('.hotel-engname').value || '').trim();
+            const address = (hb.querySelector('.hotel-address').value || '').trim();
+            const trans = (hb.querySelector('.hotel-trans').value || '').trim();
+
+            if (name || address || checkIn || checkOut) {
+                let dateDisplay = '';
+                if (checkIn || checkOut) {
+                    dateDisplay = `📅 入住期間：${checkIn || '未指定'} 至 ${checkOut || '未指定'}`;
+                } else {
+                    dateDisplay = `(例：📅 入住期間：2026-08-15 至 2026-08-19)`;
+                }
+
+                const mapTarget = address || name || '東京車站';
+                const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapTarget)}`;
+
+                const nameHtml = name 
+                    ? `<a class="map-link editable-target spot-map-link" href="${searchUrl}" target="_blank">${name}</a>`
+                    : `<a class="map-link editable-target spot-map-link is-placeholder" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：千禧三井花園飯店 東京)">(例：千禧三井花園飯店 東京)</a>`;
+
+                const addrHtml = address
+                    ? `<a class="map-link editable-target spot-map-link" href="${searchUrl}" target="_blank">${address}</a>`
+                    : `<a class="map-link editable-target spot-map-link is-placeholder" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：東京都中央區銀座 5-11-1)">(例：東京都中央區銀座 5-11-1)</a>`;
+
+                const transHtml = formatValue(trans, '例：都營淺草線 / 日比谷線「東銀座站」A1 出口直通');
+
+                hotelsHtml += `
+                <div class="card hotel-card-item" style="margin-bottom: ${idx === hotelBlocks.length - 1 ? '0' : '10px'};">
+                    <button type="button" class="del-hotel-item-btn" onclick="this.closest('.hotel-card-item').remove()">✕ 刪除飯店</button>
+                    <div class="hotel-date-row">
+                        <b>📅 入住期間：</b>
+                        <input type="date" class="hotel-inline-date hotel-in-date" value="${checkIn}" onchange="updateHotelDateText(this)">
+                        <span>至</span>
+                        <input type="date" class="hotel-inline-date hotel-out-date" value="${checkOut}" onchange="updateHotelDateText(this)">
+                        <span class="hotel-date-text editable-target ${!checkIn && !checkOut ? 'is-placeholder' : ''}" data-placeholder="(例：📅 入住期間：2026-08-15 至 2026-08-19)">${dateDisplay}</span>
+                    </div>
+                    <b>飯店名稱：</b>${nameHtml} ${engName ? `<span class="editable-target">(${engName})</span>` : ''}<br>
+                    <b>地址：</b>${addrHtml}<br>
+                    <b>交通引導：</b>${transHtml}
+                </div>`;
+            }
+        });
+        if (!hotelsHtml) {
+            hotelsHtml = `
+            <div class="card hotel-card-item" style="margin-bottom:0;">
+                <button type="button" class="del-hotel-item-btn" onclick="this.closest('.hotel-card-item').remove()">✕ 刪除飯店</button>
+                <div class="hotel-date-row">
+                    <b>📅 入住期間：</b>
+                    <input type="date" class="hotel-inline-date hotel-in-date" onchange="updateHotelDateText(this)">
+                    <span>至</span>
+                    <input type="date" class="hotel-inline-date hotel-out-date" onchange="updateHotelDateText(this)">
+                    <span class="hotel-date-text editable-target is-placeholder" data-placeholder="(例：📅 入住期間：2026-08-15 至 2026-08-19)">(例：📅 入住期間：2026-08-15 至 2026-08-19)</span>
+                </div>
+                <b>飯店名稱：</b><a class="map-link editable-target spot-map-link is-placeholder" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：千禧三井花園飯店 東京)">(例：千禧三井花園飯店 東京)</a><br>
+                <b>地址：</b><a class="map-link editable-target spot-map-link is-placeholder" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：東京都中央區銀座 5-11-1)">(例：東京都中央區銀座 5-11-1)</a><br>
+                <b>交通引導：</b><span class="editable-target is-placeholder" data-placeholder="(例：東銀座站 A1 出口直通)">(例：東銀座站 A1 出口直通)</span>
+            </div>`;
+        }
+
+        // 行程
+        let daysHtml = '';
+        document.querySelectorAll('.day-block').forEach(db => {
+            const dayTitle = (db.querySelector('.day-title-input').value || '').trim();
+            let spotsHtml = '';
+
+            db.querySelectorAll('.spot-block').forEach(sb => {
+                const time = (sb.querySelector('.spot-time').value || '').trim();
+                const spot = (sb.querySelector('.spot-name').value || '').trim();
+                const trans = (sb.querySelector('.spot-trans').value || '').trim();
+                const routeUrl = (sb.querySelector('.spot-route-url').value || '').trim();
+                const note = (sb.querySelector('.spot-note').value || '').trim();
+
+                if (time || spot || trans) {
+                    let spotDisplayHtml = '';
+                    if (spot) {
+                        const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot)}`;
+                        spotDisplayHtml = `<a class="map-link editable-target spot-map-link" href="${searchUrl}" target="_blank">${spot}</a>`;
+                    } else {
+                        spotDisplayHtml = `<a class="map-link editable-target spot-map-link is-placeholder" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：景點名稱)">(例：景點名稱)</a>`;
+                    }
+                    const headerDisplay = [
+                        time ? `<span class="editable-target">${time}</span>` : `<span class="editable-target is-placeholder" data-placeholder="(例：14:00)">(例：14:00)</span>`, 
+                        spotDisplayHtml
+                    ].filter(Boolean).join(' ');
+
+                    const transHtml = formatValue(trans, '例：搭計程車15分 / 搭JR約30分 / 步行10分見7-11左轉');
+                    const noteHtml = formatValue(note, '例：品嚐招牌美食或注意事項說明');
+
+                    spotsHtml += `
+                    <div class="item-box">
+                        <div class="spot-order-actions">
+                            <button type="button" class="btn-order" onclick="moveSpotItem(this, -1)">⬆</button>
+                            <button type="button" class="btn-order" onclick="moveSpotItem(this, 1)">⬇</button>
+                            <button type="button" class="del-item-btn" onclick="this.closest('.item-box').remove()">✕</button>
+                        </div>
+                        ${headerDisplay ? `<div class="time-spot">${headerDisplay}</div>` : ''}
+                        <div class="trans-info">
+                            <b>交通路線: </b>${transHtml} 
+                            <span class="route-link-wrapper">${routeUrl ? `<a class="route-btn" href="${routeUrl}" target="_blank">📍【google路線】</a>` : ''}</span>
+                            <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 點我編輯可生成 Google 路線</button>
+                        </div>
+                        <div class="note-info">${noteHtml}</div>
+                    </div>`;
+                }
+            });
+
+            const dayTitleDisplay = dayTitle || '(例：Day 1｜抵達與市區探索)';
+            daysHtml += `
+            <details class="sub-menu-item">
+                <button type="button" class="del-day-btn" onclick="this.closest('.sub-menu-item').remove()">✕ 刪除當天</button>
+                <summary class="sub-menu-title editable-target ${!dayTitle ? 'is-placeholder' : ''}" data-placeholder="(例：Day 1｜當日行程規劃)">${dayTitleDisplay}</summary>
+                <div class="sub-menu-content">
+                    <div class="spots-list-wrapper">${spotsHtml}</div>
+                    <button type="button" class="inline-add-spot-btn" onclick="addNewSpotToDay(this)">+ 新增景點時段</button>
+                </div>
+            </details>`;
+        });
+
+        // 購物（純 2 欄位：類別、建議地點與提醒）
+        let shopHtml = '';
+        document.querySelectorAll('#shoppingContainer .row').forEach(sr => {
+            const cat = (sr.querySelector('.shop-cat').value || '').trim();
+            const desc = (sr.querySelector('.shop-desc').value || '').trim();
+            if (cat) {
+                const descHtml = formatValue(desc, '例：退稅指引與採購清單');
+                shopHtml += `<tr><td><b class="editable-target">${cat}</b></td><td>${descHtml}</td></tr>`;
+            }
+        });
+
+        // 優惠券
+        let subCouponsHtml = '';
+        document.querySelectorAll('#couponsContainer .coupon-block').forEach((cb, cIdx) => {
+            const title = (cb.querySelector('.coupon-title-input').value || '').trim();
+            const url = (cb.querySelector('.coupon-url-input').value || '').trim();
+            const desc = (cb.querySelector('.coupon-desc-input').value || '').trim();
+
+            if (title || url) {
+                const descHtml = desc ? desc.replace(/\n/g, '<br>') : '';
+                const descOutput = descHtml ? `<div class="editable-target" style="font-size: 13.5px; color: var(--sub-text); margin-top: 10px;">${descHtml}</div>` : `<div class="editable-target is-placeholder" style="font-size: 13.5px; margin-top: 10px;" data-placeholder="(例：消費滿額享折扣優惠)">(例：消費滿額享折扣優惠)</div>`;
+                subCouponsHtml += `
+                <details class="sub-menu-item">
+                    <button type="button" class="del-day-btn" onclick="this.closest('.sub-menu-item').remove()">✕ 刪除優惠券</button>
+                    <summary class="sub-menu-title editable-target">${title || `優惠券 ${cIdx + 1}`}</summary>
+                    <div class="sub-menu-content">
+                        <div class="card" style="background-color: #fffaf0; border-color: #f6ad55; margin-bottom: 0;">
+                            <span class="coupon-link-wrapper">${url ? `<a class="coupon-btn" href="${url}" target="_blank">👉 點此開啟電子優惠券</a>` : ''}</span>
+                            <button type="button" class="btn-edit-link" onclick="editCouponUrl(this)">🔗 換連結</button>
+                            ${descOutput}
+                        </div>
+                    </div>
+                </details>`;
+            }
+        });
+
+        const couponsHtml = `
+        <details class="menu-item">
+            <summary class="menu-title">🎁 5. 專屬電子優惠券</summary>
+            <div class="menu-content" id="couponsContainer">
+                <div id="couponsWrapper">${subCouponsHtml}</div>
+                <button type="button" class="inline-add-section-btn" onclick="addNewCouponItem()">➕ 新增電子優惠券</button>
+            </div>
+        </details>`;
+
+        // 文件與票券
+        let docItemsHtml = '';
+        document.querySelectorAll('#docsContainer .doc-block').forEach(docEl => {
+            const title = (docEl.querySelector('.doc-title-input')?.value || '').trim();
+            const note = (docEl.querySelector('.doc-note-input')?.value || '').trim();
+            const linkUrl = (docEl.querySelector('.doc-url-input')?.value || '').trim();
+
+            if (title || note || linkUrl) {
+                const linkButton = linkUrl ? `
+                <div style="margin-top: 8px;">
+                    <a href="${linkUrl}" target="_blank" class="doc-link-btn">
+                        🔗 查看票券 / 圖檔連結
+                    </a>
+                </div>` : '';
+
+                const titleOutput = formatValue(title, '例：JR 列車 QRCODE', 'doc-card-title');
+                const noteOutput = formatValue(note, '例：回程交通：從札幌到新千歲機場坐 JR 列車');
+
+                docItemsHtml += `
+                <div class="card" style="margin-bottom: 10px;">
+                    <button type="button" class="del-item-btn" onclick="this.closest('.card').remove()">✕</button>
+                    <div style="font-size: 15.5px; font-weight: bold; color: var(--primary);">${titleOutput}</div>
+                    <div style="font-size: 13.5px; color: var(--sub-text); margin-top: 4px;">${noteOutput}</div>
+                    <div class="doc-link-wrapper">${linkButton}</div>
+                    <button type="button" class="btn-edit-link" style="margin-top: 6px;" onclick="editDocLinkUrl(this)">🔗 換連結</button>
+                </div>`;
+            }
+        });
+
+        const docsHtml = `
+        <details class="menu-item">
+            <summary class="menu-title">📎 6. 電子票券與重要文件</summary>
+            <div class="menu-content" id="docsContainer">
+                <div id="docsWrapper">${docItemsHtml}</div>
+                <button type="button" class="inline-add-section-btn" onclick="addNewDocItem()">➕ 新增重要文件 / 票券</button>
+            </div>
+        </details>`;
+
+        return `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>${rawTitle || '旅遊手冊'}</title>
+<style>
+    :root { --primary: #1a2a3a; --accent: #c86d51; --highlight: #2b6cb0; --bg: #f7f6f3; --card-bg: #ffffff; --text: #2c2a29; --sub-text: #666059; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 12px; font-size: 16px; line-height: 1.5; padding-top: 52px; }
+    
+    .top-floating-bar { position: fixed; top: 10px; right: 12px; z-index: 10000; display: flex; gap: 6px; }
+    .top-btn { background: var(--primary); color: #fff; border: 1.5px solid #fff; padding: 6px 12px; border-radius: 20px; font-size: 12.5px; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.25); cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation; }
+    .top-btn:active { transform: scale(0.96); }
+    .top-btn-pdf { background: #2b6cb0; }
+    body.is-editing #guideEditToggleBtn { background: #e53e3e; }
+    body.is-editing .editable-target { outline: 1.5px dashed var(--accent) !important; background-color: rgba(200, 109, 81, 0.08) !important; border-radius: 3px; min-width: 20px; display: inline-block; }
+
+    /* 方案 C 專屬樣式：Placeholder 灰階斜體提示 */
+    .is-placeholder {
+        color: #9ca3af !important;
+        font-style: italic !important;
+    }
+    a.is-placeholder {
+        text-decoration-style: dotted !important;
+        color: #93c5fd !important;
+    }
+
+    .sync-badge { position: fixed; top: 12px; left: 12px; z-index: 10000; font-size: 11px; padding: 4px 8px; border-radius: 12px; background: rgba(0,0,0,0.7); color: #fff; display: flex; align-items: center; gap: 4px; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #48bb78; }
+
+    /* 編輯模式動態按鈕 */
+    .inline-add-spot-btn, .inline-add-section-btn { display: none; width: 100%; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13.5px; font-weight: bold; margin-top: 10px; cursor: pointer; touch-action: manipulation; text-align: center; }
+    .inline-add-spot-btn { background: #3182ce; }
+    .inline-add-section-btn { background: #2b6cb0; }
+    
+    .del-item-btn { display: none; background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
+    .del-day-btn { display: none; position: absolute; top: 10px; right: 38px; background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 2px 8px; font-size: 11.5px; font-weight: bold; cursor: pointer; z-index: 5; }
+    .del-hotel-item-btn { display: none; position: absolute; top: 10px; right: 10px; background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 3px 8px; font-size: 11.5px; font-weight: bold; cursor: pointer; z-index: 5; }
+    .del-row-btn { display: none; background: #e53e3e; color: #fff; border: none; border-radius: 3px; padding: 2px 6px; font-size: 11px; cursor: pointer; }
+    .btn-set-route { display: none; background: #38a169; color: #fff; border: none; border-radius: 12px; padding: 2px 8px; font-size: 11.5px; font-weight: bold; cursor: pointer; margin-left: 6px; }
+    .btn-edit-link { display: none; background: #4a5568; color: #fff; border: none; border-radius: 12px; padding: 2px 8px; font-size: 11.5px; font-weight: bold; cursor: pointer; margin-left: 6px; }
+
+    /* 飯店日期選取器 */
+    .hotel-inline-date { display: none; padding: 2px 6px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px; font-family: inherit; margin: 0 4px; }
+    .hotel-hint-text { display: none; font-size: 11px; color: #718096; font-weight: normal; margin-left: 4px; }
+
+    body.is-editing .inline-add-spot-btn,
+    body.is-editing .inline-add-section-btn,
+    body.is-editing .del-item-btn,
+    body.is-editing .del-day-btn,
+    body.is-editing .del-hotel-item-btn,
+    body.is-editing .del-row-btn,
+    body.is-editing .btn-set-route,
+    body.is-editing .btn-edit-link,
+    body.is-editing .hotel-inline-date,
+    body.is-editing .hotel-hint-text,
+    body.is-editing .spot-order-actions { display: inline-flex; }
+    body.is-editing .hotel-date-text { display: none; }
+
+    .spot-order-actions { display: none; position: absolute; top: 2px; right: 2px; gap: 4px; z-index: 5; }
+    .btn-order { background: #4a5568; color: #fff; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
+
+    .tokyo-hero-banner { position: relative; background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 60%, #415a77 100%); color: #ffffff; padding: 24px 18px; border-radius: 12px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); overflow: hidden; }
+    .tokyo-hero-banner::before { content: ""; position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(230,57,70,0.85) 0%, rgba(230,57,70,0) 70%); border-radius: 50%; z-index: 1; }
+    .hero-content { position: relative; z-index: 2; }
+    .hero-badge { display: inline-block; background-color: #e63946; color: #ffffff; font-size: 11px; font-weight: bold; letter-spacing: 1px; padding: 2px 8px; border-radius: 20px; margin-bottom: 6px; text-transform: uppercase; }
+    .hero-title { margin: 0 0 4px 0; font-size: 21px; font-weight: 800; color: #f4d068; }
+    .hero-subtitle { margin: 0; font-size: 13.5px; color: #e0e1dd; }
+    .summary-card { background: var(--card-bg); border-radius: 10px; padding: 16px; margin-bottom: 14px; border: 1px solid #e2ded9; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+    .summary-title { font-size: 17.5px; font-weight: bold; color: var(--primary); border-left: 4px solid var(--accent); padding-left: 8px; margin-bottom: 10px; }
+    .summary-list { padding-left: 18px; margin: 0; font-size: 14.5px; }
+    .summary-list li { margin-bottom: 6px; }
+    
+    details.menu-item { background-color: #ffffff; border: 1.5px solid var(--primary); border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); overflow: hidden; }
+    summary.menu-title { padding: 14px; font-size: 15.5px; font-weight: bold; color: var(--primary); cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+    summary.menu-title::-webkit-details-marker { display: none; }
+    summary.menu-title::after { content: "➔"; font-size: 14px; transition: transform 0.2s ease; }
+    details[open] > summary.menu-title { background-color: var(--primary); color: #ffffff; }
+    details[open] > summary.menu-title::after { transform: rotate(90deg); }
+    .menu-content { padding: 12px; background-color: var(--bg); border-top: 1px solid #e2ded9; }
+
+    details.sub-menu-item { position: relative; background-color: #ffffff; border: 1.5px solid var(--accent); border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+    details.sub-menu-item:last-child { margin-bottom: 0; }
+    summary.sub-menu-title { padding: 12px; font-size: 14.5px; font-weight: bold; color: var(--accent); cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+    summary.sub-menu-title::-webkit-details-marker { display: none; }
+    summary.sub-menu-title::after { content: "➔"; font-size: 13px; transition: transform 0.2s ease; }
+    details[open] > summary.sub-menu-title { background-color: var(--accent); color: #ffffff; }
+    details[open] > summary.sub-menu-title::after { transform: rotate(90deg); }
+    .sub-menu-content { padding: 10px; background-color: #ffffff; border-top: 1px solid #e2ded9; }
+
+    .card { position: relative; background: var(--card-bg); border-radius: 8px; padding: 14px; margin-bottom: 12px; border: 1px solid #e2ded9; }
+    .item-box { border-bottom: 1px dotted #e0dcd5; padding-bottom: 10px; margin-bottom: 10px; position: relative; }
+    .item-box:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+    .time-spot { font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 4px; }
+    .trans-info { background-color: #f0f4f8; padding: 8px 10px; border-radius: 6px; font-size: 14.5px; color: #2d3748; margin-bottom: 4px; }
+    .note-info { font-size: 14px; color: var(--sub-text); margin-top: 4px; }
+    a.map-link { color: var(--highlight); text-decoration: underline; font-weight: bold; }
+    a.route-btn { display: inline-flex; align-items: center; gap: 3px; background-color: #e8f0fe; color: #1a73e8; border: 1px solid #aecbfa; padding: 2px 8px; border-radius: 12px; font-size: 12.5px; font-weight: bold; text-decoration: none; margin-left: 6px; }
+    a.coupon-btn { display: inline-block; background-color: #e63946; color: #ffffff; font-weight: bold; padding: 8px 14px; border-radius: 6px; text-decoration: none; margin-top: 6px; font-size: 14px; }
+    
+    .doc-link-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: #2b6cb0;
+        color: #ffffff !important;
+        font-weight: bold;
+        padding: 8px 14px;
+        border-radius: 6px;
+        text-decoration: none;
+        margin-top: 8px;
+        font-size: 13.5px;
+    }
+    .doc-link-btn:hover { background-color: #2c5282; }
+
+    table.simple-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    table.simple-table th { background: #edf2f7; color: #2d3748; text-align: left; padding: 6px 8px; }
+    table.simple-table td { padding: 6px 8px; border-bottom: 1px solid #edf2f7; }
+
+    @media print {
+        body { padding-top: 0 !important; background: #fff !important; }
+        .top-floating-bar, .sync-badge, .inline-add-spot-btn, .inline-add-section-btn, .del-item-btn, .del-day-btn, .del-hotel-item-btn, .del-row-btn, .btn-set-route, .btn-edit-link, .spot-order-actions, .hotel-inline-date, .hotel-hint-text { display: none !important; }
+        details { display: block !important; border: 1.5px solid #cbd5e0 !important; margin-bottom: 14px !important; }
+        summary.menu-title { display: block !important; background-color: #1a2a3a !important; color: #ffffff !important; padding: 8px 12px !important; font-size: 15px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        summary.menu-title::after { display: none !important; }
+        summary.sub-menu-title { display: block !important; background-color: #c86d51 !important; color: #ffffff !important; padding: 6px 10px !important; font-size: 14px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        summary.sub-menu-title::after { display: none !important; }
+        details .menu-content, details .sub-menu-content { display: block !important; border: none !important; padding: 8px !important; }
+        .tokyo-hero-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .card, .item-box { page-break-inside: avoid; }
+    }
+</style>
+</head>
+<body>
+    <div class="sync-badge" id="syncStatusBadge" style="display:none;">
+        <span class="sync-dot" id="syncDot"></span>
+        <span id="syncStatusText">雲端同步中</span>
+    </div>
+
+    <!-- 頂部操作按鈕組 -->
+    <div class="top-floating-bar">
+        <button type="button" class="top-btn top-btn-pdf" id="guidePrintPdfBtn">📄 下載 PDF</button>
+        <button type="button" class="top-btn" id="guideEditToggleBtn">✏️ 編輯內容</button>
+    </div>
+
+    <div id="guideMainContent">
+        <div class="tokyo-hero-banner">
+            <div class="hero-content">
+                <span class="hero-badge">TRAVEL GUIDE</span>
+                ${titleHtml}
+                ${subtitleHtml}
+            </div>
+        </div>
+        ${summaryBlockHtml}
+        <details class="menu-item">
+            <summary class="menu-title">✈️ 1. 班機時間</summary>
+            <div class="menu-content">
+                <div class="card" style="margin-bottom: 0; line-height: 1.8;">
+                    <b>去程時間：</b>${formatValue(flightInTime, '例：2026/8/15(六) 06:35 > 11:15')} &nbsp;|&nbsp; 
+                    <b>班機代碼：</b>${formatValue(flightInNo, '例：BR198')} &nbsp;|&nbsp; 
+                    <b>出發機場：</b>${formatValue(flightInDep, '例：桃園機場 T2')} &nbsp;|&nbsp; 
+                    <b>抵達機場：</b>${formatValue(flightInArr, '例：成田機場 T1')}
+                    <br><br>
+                    <b>回程時間：</b>${formatValue(flightOutTime, '例：2026/8/19(三) 14:00 > 16:55')} &nbsp;|&nbsp; 
+                    <b>班機代碼：</b>${formatValue(flightOutNo, '例：BR197')} &nbsp;|&nbsp; 
+                    <b>出發機場：</b>${formatValue(flightOutDep, '例：成田機場 T1')} &nbsp;|&nbsp; 
+                    <b>抵達機場：</b>${formatValue(flightOutArr, '例：桃園機場 T2')}
+                </div>
+            </div>
+        </details>
+        <details class="menu-item">
+            <summary class="menu-title">🏨 2. 飯店資訊</summary>
+            <div class="menu-content" id="hotelsListContent">
+                <div id="hotelsWrapper">${hotelsHtml}</div>
+                <button type="button" class="inline-add-section-btn" onclick="addNewHotelBlock()">➕ 新增飯店</button>
+            </div>
+        </details>
+        <details class="menu-item">
+            <summary class="menu-title">🗓️ 3. 每日行程與交通</summary>
+            <div class="menu-content" id="daysListContent">
+                <div id="daysWrapper">${daysHtml}</div>
+                <button type="button" class="inline-add-section-btn" onclick="addNewDayBlock()">➕ 新增天數 (Day)</button>
+            </div>
+        </details>
+        <details class="menu-item">
+            <summary class="menu-title">🛍️ 4. 購物採買清單</summary>
+            <div class="menu-content">
+                <div class="card" style="margin-bottom: 0;">
+                    <table class="simple-table" id="shoppingTable">
+                        <thead>
+                            <tr><th>類別</th><th>建議地點與提醒</th></tr>
+                        </thead>
+                        <tbody>${shopHtml}</tbody>
+                    </table>
+                    <button type="button" class="inline-add-section-btn" onclick="addNewShoppingRow()">➕ 新增購物項目</button>
+                </div>
+            </div>
+        </details>
+        ${couponsHtml}
+        ${docsHtml}
+    </div>
+
+    <script>
+    // 方案 C 核心：聚焦帶有 Placeholder 的元素時自動全選內容
+    document.addEventListener('focusin', function(e) {
+        if (e.target && e.target.classList.contains('editable-target') && e.target.classList.contains('is-placeholder')) {
+            const range = document.createRange();
+            range.selectNodeContents(e.target);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    });
+
+    // 方案 C 核心：失焦時若已填寫真實文字，自動移除 Placeholder 樣式
+    document.addEventListener('focusout', function(e) {
+        if (e.target && e.target.classList.contains('editable-target')) {
+            const text = e.target.textContent.trim();
+            const placeholder = e.target.getAttribute('data-placeholder');
+            if (text && text !== placeholder) {
+                e.target.classList.remove('is-placeholder');
+            } else if (!text && placeholder) {
+                e.target.textContent = placeholder;
+                e.target.classList.add('is-placeholder');
+            }
+        }
+    });
+
+    // 飯店日期選取器更新文字
+    function updateHotelDateText(input) {
+        const row = input.closest('.hotel-date-row');
+        const inDate = row.querySelector('.hotel-in-date').value;
+        const outDate = row.querySelector('.hotel-out-date').value;
+        const textSpan = row.querySelector('.hotel-date-text');
+
+        if (inDate || outDate) {
+            textSpan.textContent = '📅 入住期間：' + (inDate || '未指定') + ' 至 ' + (outDate || '未指定');
+            textSpan.classList.remove('is-placeholder');
+        } else {
+            textSpan.textContent = '(例：📅 入住期間：2026-08-15 至 2026-08-19)';
+            textSpan.classList.add('is-placeholder');
+        }
+    }
+
+    // 新增飯店功能（手冊編輯模式直出）
+    function addNewHotelBlock() {
+        const wrapper = document.getElementById('hotelsWrapper');
+        const newHotel = document.createElement('div');
+        newHotel.className = 'card hotel-card-item';
+        newHotel.style.marginBottom = '10px';
+        newHotel.innerHTML = \`
+            <button type="button" class="del-hotel-item-btn" onclick="this.closest('.hotel-card-item').remove()">✕ 刪除飯店</button>
+            <div class="hotel-date-row">
+                <b>📅 入住期間：</b>
+                <input type="date" class="hotel-inline-date hotel-in-date" onchange="updateHotelDateText(this)">
+                <span>至</span>
+                <input type="date" class="hotel-inline-date hotel-out-date" onchange="updateHotelDateText(this)">
+                <span class="hotel-date-text editable-target is-placeholder" data-placeholder="(例：📅 入住期間：2026-08-15 至 2026-08-19)">(例：📅 入住期間：2026-08-15 至 2026-08-19)</span>
+            </div>
+            <b>飯店名稱：</b><a class="map-link editable-target spot-map-link is-placeholder" contenteditable="true" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：飯店中文名稱)">(例：飯店中文名稱)</a> <span class="hotel-hint-text">（輸入的資訊會自動產生 Google 地圖連結）</span><br>
+            <b>地址：</b><a class="map-link editable-target spot-map-link is-placeholder" contenteditable="true" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：飯店地址)">(例：飯店地址)</a> <span class="hotel-hint-text">（輸入的資訊會自動產生 Google 地圖連結）</span><br>
+            <b>交通引導：</b><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：鄰近車站出口與路線指引)">(例：鄰近車站出口與路線指引)</span>
+        \`;
+        wrapper.appendChild(newHotel);
+    }
+
+    // 景點時段上移 / 下移排序
+    function moveSpotItem(btn, direction) {
+        const item = btn.closest('.item-box');
+        if (!item) return;
+        if (direction === -1) {
+            const prev = item.previousElementSibling;
+            if (prev && prev.classList.contains('item-box')) {
+                item.parentNode.insertBefore(item, prev);
+            }
+        } else if (direction === 1) {
+            const next = item.nextElementSibling;
+            if (next && next.classList.contains('item-box')) {
+                item.parentNode.insertBefore(next, item);
+            }
+        }
+    }
+
+    // 監聽景點/飯店文字修改：失焦自動更新 Google Maps 超連結
+    document.addEventListener('focusout', function(e) {
+        if (e.target && e.target.classList.contains('spot-map-link')) {
+            const newText = e.target.textContent.trim();
+            const placeholder = e.target.getAttribute('data-placeholder');
+            if (newText && newText !== placeholder) {
+                e.target.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(newText);
+            }
+        }
+    });
+
+    // 手動設定 / 修改 Google 路線功能
+    function editRouteForSpot(btn) {
+        const transBox = btn.closest('.trans-info');
+        const wrapper = transBox.querySelector('.route-link-wrapper');
+        const currentLink = wrapper.querySelector('a.route-btn');
+        const defaultVal = currentLink ? currentLink.href : '';
+
+        const inputVal = prompt("請輸入 Google 路線網址，或輸入「起點 / 終點」自動生成：\\n(例如：札幌車站 / 小樽運河，若欲刪除請清空留白)", defaultVal);
+        if (inputVal === null) return;
+
+        const val = inputVal.trim();
+        if (!val) {
+            wrapper.innerHTML = '';
+        } else if (val.startsWith('http://') || val.startsWith('https://')) {
+            wrapper.innerHTML = '<a class="route-btn" href="' + val + '" target="_blank">📍【google路線】</a>';
+        } else if (val.includes('/') || val.includes('➔') || val.includes('到') || val.includes('-')) {
+            const parts = val.split(/[\\/➔到\\-]/).map(s => s.trim()).filter(Boolean);
+            if (parts.length >= 2) {
+                const autoUrl = 'https://www.google.com/maps/dir/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]);
+                wrapper.innerHTML = '<a class="route-btn" href="' + autoUrl + '" target="_blank">📍【google路線】</a>';
+            } else {
+                const searchUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(val);
+                wrapper.innerHTML = '<a class="route-btn" href="' + searchUrl + '" target="_blank">📍【google路線】</a>';
+            }
+        } else {
+            const searchUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(val);
+            wrapper.innerHTML = '<a class="route-btn" href="' + searchUrl + '" target="_blank">📍【google路線】</a>';
+        }
+    }
+
+    // 編輯電子優惠券連結網址
+    function editCouponUrl(btn) {
+        const card = btn.closest('.card');
+        const wrapper = card.querySelector('.coupon-link-wrapper');
+        const currentLink = wrapper.querySelector('a.coupon-btn');
+        const defaultVal = currentLink ? currentLink.href : '';
+
+        const inputVal = prompt("請輸入新的優惠券網址 (若欲移除請留白清空)：", defaultVal);
+        if (inputVal === null) return;
+
+        const val = inputVal.trim();
+        if (!val) {
+            wrapper.innerHTML = '';
+        } else {
+            wrapper.innerHTML = '<a class="coupon-btn" href="' + val + '" target="_blank">👉 點此開啟電子優惠券</a>';
+        }
+    }
+
+    // 編輯重要文件 / 票券圖檔連結網址
+    function editDocLinkUrl(btn) {
+        const card = btn.closest('.card');
+        const wrapper = card.querySelector('.doc-link-wrapper');
+        const currentLink = wrapper.querySelector('a.doc-link-btn');
+        const defaultVal = currentLink ? currentLink.href : '';
+
+        const inputVal = prompt("請輸入新的票券 / 圖檔連結網址 (若欲移除請留白清空)：", defaultVal);
+        if (inputVal === null) return;
+
+        const val = inputVal.trim();
+        if (!val) {
+            wrapper.innerHTML = '';
+        } else {
+            wrapper.innerHTML = '<div style="margin-top: 8px;"><a href="' + val + '" target="_blank" class="doc-link-btn">🔗 查看票券 / 圖檔連結</a></div>';
+        }
+    }
+
+    function addNewSpotToDay(btn) {
+        const wrapper = btn.previousElementSibling;
+        const newBox = document.createElement('div');
+        newBox.className = 'item-box';
+        newBox.innerHTML = \`
+            <div class="spot-order-actions">
+                <button type="button" class="btn-order" onclick="moveSpotItem(this, -1)">⬆</button>
+                <button type="button" class="btn-order" onclick="moveSpotItem(this, 1)">⬇</button>
+                <button type="button" class="del-item-btn" onclick="this.closest('.item-box').remove()">✕</button>
+            </div>
+            <div class="time-spot">
+                <span class="editable-target" contenteditable="true">12:00 - 13:30</span> 
+                <a class="map-link editable-target spot-map-link is-placeholder" contenteditable="true" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：新增景點名稱)">(例：新增景點名稱)</a>
+            </div>
+            <div class="trans-info">
+                <b>交通路線: </b><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：搭計程車15分 / 搭JR約30分 / 步行10分見7-11左轉)">(例：搭計程車15分 / 搭JR約30分 / 步行10分見7-11左轉)</span>
+                <span class="route-link-wrapper"></span>
+                <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 點我編輯可生成 Google 路線</button>
+            </div>
+            <div class="note-info"><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：備註事項說明)">(例：備註事項說明)</span></div>
+        \`;
+        wrapper.appendChild(newBox);
+    }
+
+    function addNewDayBlock() {
+        const wrapper = document.getElementById('daysWrapper');
+        const dayCount = wrapper.querySelectorAll('.sub-menu-item').length + 1;
+        const newDay = document.createElement('details');
+        newDay.className = 'sub-menu-item';
+        newDay.innerHTML = \`
+            <button type="button" class="del-day-btn" onclick="this.closest('.sub-menu-item').remove()">✕ 刪除當天</button>
+            <summary class="sub-menu-title editable-target" contenteditable="true">Day \${dayCount}｜新行程規劃</summary>
+            <div class="sub-menu-content">
+                <div class="spots-list-wrapper">
+                    <div class="item-box">
+                        <div class="spot-order-actions">
+                            <button type="button" class="btn-order" onclick="moveSpotItem(this, -1)">⬆</button>
+                            <button type="button" class="btn-order" onclick="moveSpotItem(this, 1)">⬇</button>
+                            <button type="button" class="del-item-btn" onclick="this.closest('.item-box').remove()">✕</button>
+                        </div>
+                        <div class="time-spot">
+                            <span class="editable-target" contenteditable="true">09:00</span> 
+                            <a class="map-link editable-target spot-map-link is-placeholder" contenteditable="true" href="https://www.google.com/maps" target="_blank" data-placeholder="(例：新景點名稱)">(例：新景點名稱)</a>
+                        </div>
+                        <div class="trans-info">
+                            <b>交通路線: </b><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：搭計程車15分 / 搭JR約30分 / 步行10分見7-11左轉)">(例：搭計程車15分 / 搭JR約30分 / 步行10分見7-11左轉)</span>
+                            <span class="route-link-wrapper"></span>
+                            <button type="button" class="btn-set-route" onclick="editRouteForSpot(this)">📍 點我編輯可生成 Google 路線</button>
+                        </div>
+                        <div class="note-info"><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：注意事項)">(例：注意事項)</span></div>
+                    </div>
+                </div>
+                <button type="button" class="inline-add-spot-btn" onclick="addNewSpotToDay(this)">+ 新增景點時段</button>
+            </div>
+        \`;
+        wrapper.appendChild(newDay);
+    }
+
+    function addNewShoppingRow() {
+        const tbody = document.querySelector('#shoppingTable tbody');
+        const tr = document.createElement('tr');
+        tr.innerHTML = \`
+            <td><b class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：新採買項目)">(例：新採買項目)</b></td>
+            <td><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：購買地點與提醒說明)">(例：購買地點與提醒說明)</span></td>
+        \`;
+        tbody.appendChild(tr);
+    }
+
+    function addNewCouponItem() {
+        const wrapper = document.getElementById('couponsWrapper');
+        const newCoupon = document.createElement('details');
+        newCoupon.className = 'sub-menu-item';
+        newCoupon.innerHTML = \`
+            <button type="button" class="del-day-btn" onclick="this.closest('.sub-menu-item').remove()">✕ 刪除優惠券</button>
+            <summary class="sub-menu-title editable-target is-placeholder" contenteditable="true" data-placeholder="(例：新店家優惠券名稱)">(例：新店家優惠券名稱)</summary>
+            <div class="sub-menu-content">
+                <div class="card" style="background-color: #fffaf0; border-color: #f6ad55; margin-bottom: 0;">
+                    <span class="coupon-link-wrapper"><a class="coupon-btn" href="https://" target="_blank">👉 點此開啟電子優惠券</a></span>
+                    <button type="button" class="btn-edit-link" onclick="editCouponUrl(this)">🔗 換連結</button>
+                    <div class="editable-target is-placeholder" contenteditable="true" style="font-size: 13.5px; margin-top: 10px;" data-placeholder="(例：請在此點擊輸入折扣說明)">(例：請在此點擊輸入折扣說明)</div>
+                </div>
+            </div>
+        \`;
+        wrapper.appendChild(newCoupon);
+    }
+
+    function addNewDocItem() {
+        const wrapper = document.getElementById('docsWrapper');
+        const newDoc = document.createElement('div');
+        newDoc.className = 'card';
+        newDoc.style.marginBottom = '10px';
+        newDoc.innerHTML = \`
+            <button type="button" class="del-item-btn" onclick="this.closest('.card').remove()">✕</button>
+            <div style="font-size: 15.5px; font-weight: bold; color: var(--primary);"><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：新文件 / 票券名稱)">(例：新文件 / 票券名稱)</span></div>
+            <div style="font-size: 13.5px; color: var(--sub-text); margin-top: 4px;"><span class="editable-target is-placeholder" contenteditable="true" data-placeholder="(例：備註說明)">(例：備註說明)</span></div>
+            <div class="doc-link-wrapper">
+                <div style="margin-top: 8px;">
+                    <a href="https://" target="_blank" class="doc-link-btn">
+                        🔗 查看票券 / 圖檔連結
+                    </a>
+                </div>
+            </div>
+            <button type="button" class="btn-edit-link" style="margin-top: 6px;" onclick="editDocLinkUrl(this)">🔗 換連結</button>
+        \`;
+        wrapper.appendChild(newDoc);
+    }
+
+    (function() {
+        const FIREBASE_DB_URL = ${safeDbUrl};
+        const FIREBASE_ROOM_ID = ${safeRoomId};
+        const LOCAL_BUILD_TIME = "${currentBuildTime}";
+        const STORAGE_KEY = 'saved_guide_html_' + location.pathname;
+        let isEditing = false;
+
+        function getEndpoint() {
+            if (!FIREBASE_DB_URL) return null;
+            let base = FIREBASE_DB_URL.trim();
+            if (!base.endsWith('/')) base += '/';
+            return base + 'guides/' + encodeURIComponent(FIREBASE_ROOM_ID) + '.json';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            bindEvents();
+            initCloudSync();
+        });
+
+        function bindEvents() {
+            const editBtn = document.getElementById('guideEditToggleBtn');
+            if (editBtn) editBtn.addEventListener('click', toggleEdit);
+
+            const pdfBtn = document.getElementById('guidePrintPdfBtn');
+            if (pdfBtn) pdfBtn.addEventListener('click', printToPdf);
+        }
+
+        function initCloudSync() {
+            const endpoint = getEndpoint();
+            const badge = document.getElementById('syncStatusBadge');
+            const dot = document.getElementById('syncDot');
+            const text = document.getElementById('syncStatusText');
+
+            if (endpoint) {
+                badge.style.display = 'flex';
+                text.textContent = '雲端連線中...';
+                fetch(endpoint)
+                    .then(res => res.json())
+                    .then(data => {
+                        const cloudTime = data && data.updatedAt ? new Date(data.updatedAt).getTime() : 0;
+                        const localTime = new Date(LOCAL_BUILD_TIME).getTime();
+
+                        if (data && data.html && cloudTime > localTime) {
+                            document.getElementById('guideMainContent').innerHTML = data.html;
+                            text.textContent = '已同步最新雲端手冊';
+                            dot.style.background = '#48bb78';
+                        } else {
+                            text.textContent = '本地版本較新，已自動更新至雲端';
+                            dot.style.background = '#48bb78';
+                            const mainHtml = document.getElementById('guideMainContent').innerHTML;
+                            fetch(endpoint, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ html: mainHtml, updatedAt: new Date().toISOString() })
+                            }).catch(() => {});
+                        }
+                    })
+                    .catch(() => {
+                        text.textContent = '離線模式 (使用本地檔案)';
+                        dot.style.background = '#e53e3e';
+                    });
+            }
+        }
+
+        function toggleEdit() {
+            isEditing = !isEditing;
+            const currentBtn = document.getElementById('guideEditToggleBtn');
+            document.body.classList.toggle('is-editing', isEditing);
+
+            document.querySelectorAll('.editable-target').forEach(el => {
+                el.contentEditable = isEditing ? 'true' : 'false';
+            });
+
+            if (isEditing) {
+                currentBtn.textContent = '💾 儲存變更';
+            } else {
+                currentBtn.textContent = '✏️ 編輯內容';
+                const mainHtml = document.getElementById('guideMainContent').innerHTML;
+
+                try { localStorage.setItem(STORAGE_KEY, mainHtml); } catch(e) {}
+
+                const endpoint = getEndpoint();
+                if (endpoint) {
+                    const text = document.getElementById('syncStatusText');
+                    text.textContent = '正在上傳雲端...';
+                    fetch(endpoint, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ html: mainHtml, updatedAt: new Date().toISOString() })
+                    })
+                    .then(() => {
+                        text.textContent = '已即時同步至雲端！';
+                        alert('🎉 變更已儲存，所有旅伴開啟此網頁時皆會同步更新！');
+                    })
+                    .catch(() => {
+                        alert('已儲存至本機（雲端連線異常，請確認網路）！');
+                    });
+                } else {
+                    alert('🎉 變更已成功儲存在此瀏覽器！');
+                }
+            }
+        }
+
+        function printToPdf() {
+            const detailsList = document.querySelectorAll('details');
+            const originalStates = Array.from(detailsList).map(d => d.hasAttribute('open'));
+
+            detailsList.forEach(d => d.setAttribute('open', 'true'));
+            window.print();
+
+            setTimeout(() => {
+                detailsList.forEach((d, idx) => {
+                    if (!originalStates[idx]) d.removeAttribute('open');
+                });
+            }, 300);
+        }
+    })();
+    <\/script>
+</body>
+</html>`;
+    }
+
+    function previewGuide() {
+        let htmlContent = generateFinalHTML();
+        htmlContent = htmlContent.replace('initCloudSync();', '// initCloudSync();');
+
+        const frame = document.getElementById('preview-frame');
+        frame.style.display = 'block';
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+        setTimeout(() => frame.scrollIntoView({ behavior: 'smooth' }), 100);
+    }
+
+    function exportPdfDirectly() {
+        const rawHtml = generateFinalHTML();
+        let printIframe = document.getElementById('pdf-print-frame');
+        if (printIframe) printIframe.remove();
+
+        printIframe = document.createElement('iframe');
+        printIframe.id = 'pdf-print-frame';
+        printIframe.style.position = 'absolute';
+        printIframe.style.top = '0';
+        printIframe.style.left = '0';
+        printIframe.style.width = '0';
+        printIframe.style.height = '0';
+        printIframe.style.border = 'none';
+        printIframe.style.visibility = 'hidden';
+        printIframe.style.pointerEvents = 'none';
+        document.body.appendChild(printIframe);
+
+        const doc = printIframe.contentDocument || printIframe.contentWindow.document;
+        doc.open();
+        doc.write(rawHtml);
+        doc.close();
+
+        setTimeout(() => {
+            const innerDoc = printIframe.contentDocument || printIframe.contentWindow.document;
+            innerDoc.querySelectorAll('details').forEach(d => {
+                d.setAttribute('open', 'true');
+            });
+
+            const topBar = innerDoc.querySelector('.top-floating-bar');
+            if (topBar) topBar.remove();
+            const syncBadge = innerDoc.querySelector('.sync-badge');
+            if (syncBadge) syncBadge.remove();
+
+            const printStyle = innerDoc.createElement('style');
+            printStyle.textContent = `
+                @page { margin: 10mm 8mm; size: A4 portrait; }
+                body { padding-top: 0 !important; background: #fff !important; }
+                summary.menu-title { display: block !important; }
+                summary.sub-menu-title { display: block !important; }
+                .tokyo-hero-banner { page-break-after: avoid; }
+                .card, .item-box { page-break-inside: avoid; break-inside: avoid; }
+            `;
+            innerDoc.head.appendChild(printStyle);
+
+            printIframe.contentWindow.onafterprint = () => { printIframe.remove(); };
+            printIframe.contentWindow.focus();
+            printIframe.contentWindow.print();
+        }, 500);
+    }
+
+    function downloadGuide() {
+        const htmlContent = generateFinalHTML();
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        const fileName = `${document.getElementById('guideTitle').value || 'travel_guide'}.html`;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
+</body>
+</html>
